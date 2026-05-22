@@ -52,3 +52,4 @@ coverage/
 
 # ── Research / internal docs (not for repo) ──────────────────
 deep-research-report*.md
+.vercel
