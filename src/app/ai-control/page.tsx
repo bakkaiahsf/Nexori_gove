@@ -1,43 +1,82 @@
-const MODES = [
-  {
-    id: "strict",
-    label: "Strict Compliance",
-    desc: "Maximum oversight. Human approval required for all AI actions.",
-    active: true,
-  },
-  {
-    id: "balanced",
-    label: "Balanced Growth",
-    desc: "Automated thresholds. Exceptions routed to human review.",
-    active: false,
-  },
-  {
-    id: "unrestricted",
-    label: "Unrestricted Discovery",
-    desc: "Minimal guardrails. Within policy bounds.",
-    active: false,
-  },
-];
+import prisma from "@/lib/db";
+import {
+  getAIControlSetting,
+  getPendingApprovals,
+  getRegulatoryData,
+  DEMO_PROJECT_KEY,
+} from "@/lib/governance";
+import AIModeToggle from "@/components/governance/AIModeToggle";
+import ApproveButton from "@/components/governance/ApproveButton";
+import EmergencyButton from "@/components/governance/EmergencyButton";
+import { AIControlMode } from "@prisma/client";
 
-const MODELS = [
-  { id: "nexori-large-3.1", arch: "Transformer (MoE)", status: "ACTIVE", safety: 98, latency: "112ms" },
-  { id: "aura-vision-beta", arch: "Vision Encoder", status: "RESTRICTED", safety: 74, latency: "438ms" },
-];
+export const dynamic = "force-dynamic";
 
-const APPROVALS = [
-  { id: "MWU-07", label: "Model Weight Update", urgency: "CRITICAL", urgencyClass: "text-critical" },
-  { id: "PO-412", label: "Policy Override", urgency: "ADVISORY", urgencyClass: "text-tertiary" },
-];
+function phaseLabel(phase: string): string {
+  const map: Record<string, string> = {
+    "change-delivery": "Change",
+    "ai-deployment": "AI Deploy",
+    "third-party-onboarding": "3rd Party",
+    incident: "Incident",
+  };
+  return map[phase] ?? phase;
+}
 
-export default function AIControl() {
+const CRITICALITY_CLASS: Record<string, string> = {
+  critical:  "bg-critical/10 text-critical border border-critical",
+  important: "bg-tertiary/20 text-tertiary border border-tertiary",
+  standard:  "bg-primary/10 text-primary border border-primary",
+};
+
+const SERVICE_LABEL: Record<string, string> = {
+  "ai-model": "AI MODEL",
+  cloud:      "CLOUD",
+  saas:       "SAAS",
+  data:       "DATA",
+  security:   "SECURITY",
+  identity:   "IDENTITY",
+};
+
+export default async function AIControl() {
+  const project = await prisma.project.findUnique({
+    where: { key: DEMO_PROJECT_KEY },
+    select: { id: true },
+  });
+
+  if (!project) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="font-mono-technical text-on-surface-variant text-[12px]">
+          No project — run: <code className="text-primary">npx prisma db seed</code>
+        </p>
+      </div>
+    );
+  }
+
+  const [aiSetting, approvals, { thirdParties }] = await Promise.all([
+    getAIControlSetting(project.id),
+    getPendingApprovals(project.id),
+    getRegulatoryData(project.id),
+  ]);
+
+  const currentMode = aiSetting?.mode ?? AIControlMode.AI_ASSIST;
+  const isEmergencyLocked = currentMode === AIControlMode.EMERGENCY_LOCK;
+
   return (
     <>
+      {/* ── Top Bar ── */}
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <h1 className="font-headline-md text-headline-md text-on-surface">AI Control Center</h1>
         <div className="flex items-center gap-md">
-          <span className="px-2 py-1 bg-primary/10 border border-primary text-primary font-mono-technical text-[10px]">
-            SYSTEM ARMED — STRICT GOVERNANCE
-          </span>
+          {isEmergencyLocked ? (
+            <span className="px-2 py-1 bg-critical text-on-error font-mono-technical text-[10px] animate-pulse">
+              EMERGENCY LOCK — AI DISABLED
+            </span>
+          ) : (
+            <span className="px-2 py-1 bg-primary/10 border border-primary text-primary font-mono-technical text-[10px]">
+              MODE: {currentMode.replace(/_/g, " ")}
+            </span>
+          )}
         </div>
       </header>
 
@@ -46,61 +85,72 @@ export default function AIControl() {
 
           {/* Emergency Protocol */}
           <div className="col-span-12 md:col-span-4 bg-surface-elevated border border-critical p-xl">
-            <h3 className="font-label-caps text-label-caps text-critical tracking-widest mb-sm">EMERGENCY PROTOCOL</h3>
+            <h3 className="font-label-caps text-label-caps text-critical tracking-widest mb-sm">
+              EMERGENCY PROTOCOL
+            </h3>
             <p className="font-mono-technical text-[11px] text-on-surface-variant mb-lg">
-              Master Kill Switch
+              Master AI Kill Switch
             </p>
             <p className="font-body-base text-body-base text-on-surface-variant mb-xl">
-              Requires Executive multi-sig authorization to engage.
+              Immediately locks all AI invocations. Governance workflows continue uninterrupted.
+              Every engagement logged as a <span className="text-critical">GovernanceEvent</span>.
             </p>
-            <button className="w-full bg-critical text-on-error font-label-caps text-label-caps py-md hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest">
-              Initiate Shutdown
-            </button>
+            <EmergencyButton isLocked={isEmergencyLocked} />
+            {aiSetting?.setAt && (
+              <p className="mt-md font-mono-technical text-[10px] text-on-surface-variant">
+                LAST CHANGED: {new Date(aiSetting.setAt).toLocaleString("en-GB")}
+                {aiSetting.setBy && ` · ${aiSetting.setBy}`}
+              </p>
+            )}
           </div>
 
-          {/* Governance Mode */}
+          {/* Governance Mode — live AIModeToggle */}
           <div className="col-span-12 md:col-span-4 bg-surface border border-border-muted p-xl">
-            <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest mb-lg">GOVERNANCE MODE</h3>
-            <div className="space-y-sm">
-              {MODES.map((m) => (
-                <div
-                  key={m.id}
-                  className={`p-md border cursor-pointer transition-colors ${
-                    m.active
-                      ? "border-primary bg-primary/5 text-on-surface"
-                      : "border-border-muted text-on-surface-variant hover:border-on-surface-variant"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-xs">
-                    <span className="font-body-bold text-body-bold">{m.label}</span>
-                    {m.active && <span className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <p className="font-mono-technical text-[11px] opacity-70">{m.desc}</p>
-                </div>
-              ))}
-            </div>
+            <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest mb-lg">
+              GOVERNANCE MODE
+            </h3>
+            <AIModeToggle currentMode={currentMode} />
+            {aiSetting?.reason && (
+              <p className="mt-lg font-mono-technical text-[10px] text-on-surface-variant border-t border-border-muted pt-md">
+                REASON: {aiSetting.reason}
+              </p>
+            )}
           </div>
 
-          {/* Human-in-Loop Approvals */}
+          {/* Human-in-the-Loop — real pending approvals */}
           <div className="col-span-12 md:col-span-4 bg-surface border border-border-muted">
             <div className="p-lg border-b border-border-muted flex items-center justify-between">
-              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">HUMAN-IN-THE-LOOP</h3>
-              <span className="px-2 py-0.5 bg-tertiary/20 text-tertiary font-mono-technical text-[10px] border border-tertiary">
-                {APPROVALS.length} PENDING
+              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                HUMAN-IN-THE-LOOP
+              </h3>
+              <span className={`px-2 py-0.5 font-mono-technical text-[10px] ${
+                approvals.length > 0
+                  ? "bg-tertiary/20 text-tertiary border border-tertiary"
+                  : "bg-primary/10 text-primary border border-primary"
+              }`}>
+                {approvals.length} PENDING
               </span>
             </div>
             <div className="divide-y divide-border-muted">
-              {APPROVALS.map((a) => (
+              {approvals.length === 0 ? (
+                <div className="p-lg">
+                  <p className="font-mono-technical text-[11px] text-primary">All approvals complete.</p>
+                </div>
+              ) : approvals.map((a) => (
                 <div key={a.id} className="p-lg hover:bg-surface-container-high transition-colors">
                   <div className="flex items-center justify-between mb-sm">
-                    <span className="font-mono-technical text-[11px] text-on-surface-variant">{a.id}</span>
-                    <span className={`font-mono-technical text-[10px] ${a.urgencyClass}`}>{a.urgency}</span>
+                    <span className="font-mono-technical text-[11px] text-on-surface-variant">
+                      #{a.id.slice(-6).toUpperCase()}
+                    </span>
+                    <span className="font-mono-technical text-[10px] text-tertiary">
+                      {phaseLabel(a.gate.case.phase)}
+                    </span>
                   </div>
-                  <p className="font-body-bold text-body-bold text-on-surface mb-md">{a.label}</p>
+                  <p className="font-body-bold text-body-bold text-on-surface mb-md truncate">
+                    {a.gate.name}
+                  </p>
                   <div className="flex gap-sm">
-                    <button className="flex-1 bg-primary text-on-primary font-label-caps text-label-caps py-xs hover:brightness-110 active:scale-95 transition-all">
-                      APPROVE
-                    </button>
+                    <ApproveButton approvalId={a.id} />
                     <button className="flex-1 border border-border-muted text-on-surface-variant font-label-caps text-label-caps py-xs hover:border-on-surface-variant transition-colors">
                       REJECT
                     </button>
@@ -110,68 +160,76 @@ export default function AIControl() {
             </div>
           </div>
 
-          {/* Model Registry */}
+          {/* Third-Party Registry — real DORA data */}
           <div className="col-span-12 bg-surface border border-border-muted">
             <div className="p-xl border-b border-border-muted flex items-center justify-between">
-              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">MODEL REGISTRY</h3>
+              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                THIRD-PARTY REGISTER
+              </h3>
               <div className="flex items-center gap-md">
                 <span className="font-mono-technical text-[11px] text-on-surface-variant">
-                  {MODELS.filter((m) => m.status === "ACTIVE").length} Active · {MODELS.length} Total
+                  {thirdParties.filter((t) => t.criticality === "critical").length} Critical ·{" "}
+                  {thirdParties.length} Total · DORA Art. 28
                 </span>
-                <button className="px-3 py-1 bg-primary text-on-primary font-label-caps text-label-caps text-[10px] hover:brightness-110 transition-all">
-                  Deploy New Model
-                </button>
               </div>
             </div>
-            <table className="w-full text-left">
-              <thead className="bg-surface-container-low border-b border-border-muted">
-                <tr>
-                  {["ID / ALIAS", "ARCHITECTURE", "STATUS", "SAFETY RATING", "LATENCY (P99)", "ACTIONS"].map((h) => (
-                    <th key={h} className="px-xl py-md font-label-caps text-label-caps text-on-surface-variant">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-muted">
-                {MODELS.map((m) => (
-                  <tr key={m.id} className="hover:bg-surface-container-highest transition-colors">
-                    <td className="px-xl py-md font-mono-technical text-[12px] text-on-surface">{m.id}</td>
-                    <td className="px-xl py-md font-body-base text-body-base text-on-surface-variant">{m.arch}</td>
-                    <td className="px-xl py-md">
-                      <span className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase ${
-                        m.status === "ACTIVE" ? "bg-primary/10 text-primary border border-primary" : "bg-critical/10 text-critical border border-critical"
-                      }`}>
-                        {m.status}
-                      </span>
-                    </td>
-                    <td className="px-xl py-md">
-                      <div className="w-full h-1 bg-surface-container-highest relative max-w-[120px]">
-                        <div className="absolute top-0 left-0 h-full bg-primary" style={{ width: `${m.safety}%` }} />
-                      </div>
-                      <span className="font-mono-technical text-[10px] text-on-surface-variant mt-1 block">{m.safety}%</span>
-                    </td>
-                    <td className="px-xl py-md font-mono-technical text-[12px] text-on-surface">{m.latency}</td>
-                    <td className="px-xl py-md">
-                      <button className="text-on-surface-variant hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>more_vert</span>
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-surface-container-low border-b border-border-muted">
+                  <tr>
+                    {["VENDOR", "SERVICE TYPE", "CRITICALITY", "REGION", "NEXT REVIEW", "STATUS"].map((h) => (
+                      <th key={h} className="px-xl py-md font-label-caps text-label-caps text-on-surface-variant">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border-muted">
+                  {thirdParties.map((t) => (
+                    <tr key={t.id} className="hover:bg-surface-container-highest transition-colors">
+                      <td className="px-xl py-md font-body-bold text-body-bold text-on-surface">
+                        {t.vendorName}
+                      </td>
+                      <td className="px-xl py-md font-mono-technical text-[11px] text-on-surface-variant">
+                        {SERVICE_LABEL[t.serviceType] ?? t.serviceType.toUpperCase()}
+                      </td>
+                      <td className="px-xl py-md">
+                        <span className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase ${
+                          CRITICALITY_CLASS[t.criticality] ?? CRITICALITY_CLASS.standard
+                        }`}>
+                          {t.criticality}
+                        </span>
+                      </td>
+                      <td className="px-xl py-md font-mono-technical text-[11px] text-on-surface-variant">
+                        {t.regionOfHosting ?? "—"}
+                      </td>
+                      <td className="px-xl py-md font-mono-technical text-[11px] text-on-surface-variant">
+                        {t.nextReviewDue
+                          ? new Date(t.nextReviewDue).toLocaleDateString("en-GB")
+                          : "—"}
+                      </td>
+                      <td className="px-xl py-md">
+                        <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary font-mono-technical text-[10px]">
+                          REGISTERED
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* ── Status Footer ── */}
       <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center justify-between px-xl font-mono-technical text-[10px] text-on-surface-variant shrink-0">
         <div className="flex items-center gap-xl">
           <div className="flex items-center gap-xs">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span>AI_GOVERNANCE: OPERATIONAL</span>
+            <span className={`w-2 h-2 rounded-full ${isEmergencyLocked ? "bg-critical animate-pulse" : "bg-primary animate-pulse"}`} />
+            <span>{isEmergencyLocked ? "AI_GOVERNANCE: LOCKED" : "AI_GOVERNANCE: OPERATIONAL"}</span>
           </div>
-          <span>MODELS_ACTIVE: {MODELS.filter((m) => m.status === "ACTIVE").length} / {MODELS.length}</span>
+          <span>MODE: {currentMode.replace(/_/g, " ")}</span>
           <span>POLICY_VERSION: v3.1.4-DORA</span>
         </div>
         <span className="font-bold text-on-surface">v0.1.0-MVP</span>
