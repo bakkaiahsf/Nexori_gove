@@ -1,0 +1,362 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum AIControlMode {
+  HUMAN_ONLY
+  AI_ASSIST
+  AI_REVIEW
+  AI_CONTROLLED_ACTION
+  EMERGENCY_LOCK
+}
+
+enum GovernanceEventType {
+  PROJECT_CREATED
+  GATE_CREATED
+  GATE_OPENED
+  GATE_APPROVED
+  GATE_REJECTED
+  EVIDENCE_SUBMITTED
+  APPROVAL_REQUESTED
+  APPROVAL_GRANTED
+  APPROVAL_REJECTED
+  AI_MODE_CHANGED
+  AI_EMERGENCY_LOCK
+  AI_INVOCATION
+  RISK_RAISED
+  RISK_MITIGATED
+  REGULATORY_MAPPING_ADDED
+  THIRD_PARTY_REGISTERED
+}
+
+enum GateStatus {
+  PENDING
+  OPEN
+  APPROVED
+  REJECTED
+  BYPASSED_WITH_EXCEPTION
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum EvidenceType {
+  DOCUMENT
+  TEST_RESULT
+  AUDIT_LOG
+  SCREENSHOT
+  SIGNED_ATTESTATION
+  POLICY_REFERENCE
+  EXTERNAL_LINK
+}
+
+enum RegulatoryFramework {
+  DORA
+  EU_AI_ACT
+  SOC2
+  ISO_27001
+  PCI_DSS
+  GDPR
+}
+
+enum RiskStatus {
+  OPEN
+  MITIGATING
+  RESOLVED
+  ACCEPTED
+}
+
+enum RiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ─────────────────────────────────────────────
+// IDENTITY
+// ─────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("viewer") // admin|governance-owner|approver|viewer
+  tenantId  String?
+  createdAt DateTime @default(now())
+
+  approvalRequests ApprovalRequest[] @relation("RequestedBy")
+  approvals        ApprovalRequest[] @relation("ResolvedBy")
+  governanceEvents GovernanceEvent[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// PROJECT
+// ─────────────────────────────────────────────
+
+model Project {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  description    String?
+  domain         String?
+  classification String?  // public|internal|confidential|restricted
+  ownerEmail     String
+  tenantId       String?
+  status         String   @default("active") // active|archived|paused
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  aiControlSetting   AIControlSetting?
+  governanceCases    GovernanceCase[]
+  governanceEvents   GovernanceEvent[]
+  evidenceItems      EvidenceItem[]
+  risks              RiskItem[]
+  thirdPartyDeps     ThirdPartyDependency[]
+  regulatoryMappings RegulatoryMapping[]
+
+  @@map("projects")
+}
+
+// ─────────────────────────────────────────────
+// AI CONTROL
+// ─────────────────────────────────────────────
+
+model AIControlSetting {
+  id          String         @id @default(cuid())
+  projectId   String         @unique
+  mode        AIControlMode  @default(AI_ASSIST)
+  setBy       String
+  setAt       DateTime       @default(now())
+  reason      String?
+  emergencyAt DateTime?
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("ai_control_settings")
+}
+
+model AIUsageEvent {
+  id              String   @id @default(cuid())
+  projectId       String?
+  sessionId       String?
+  model           String
+  mode            AIControlMode
+  action          String
+  query           String?
+  chunkIds        String[]
+  tokensIn        Int      @default(0)
+  tokensOut       Int      @default(0)
+  outcome         String   // success|blocked|error
+  blockedReason   String?
+  governanceRef   String?
+  timestamp       DateTime @default(now())
+
+  @@map("ai_usage_events")
+}
+
+// ─────────────────────────────────────────────
+// GOVERNANCE FLIGHT RECORDER
+// Append-only. No updates, no deletes.
+// ─────────────────────────────────────────────
+
+model GovernanceEvent {
+  id          String              @id @default(cuid())
+  projectId   String?
+  type        GovernanceEventType
+  actorEmail  String?
+  actorId     String?
+  resourceType String?
+  resourceId   String?
+  payload      Json?
+  ipAddress    String?
+  tenantId     String?
+  timestamp    DateTime            @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id])
+  actor   User?    @relation(fields: [actorId], references: [id])
+
+  @@index([projectId, timestamp])
+  @@index([type])
+  @@map("governance_events")
+}
+
+// ─────────────────────────────────────────────
+// GOVERNANCE CASES & GATES
+// ─────────────────────────────────────────────
+
+model GovernanceCase {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  phase       String   // change-delivery|ai-deployment|incident|third-party-onboarding
+  status      String   @default("active") // active|closed|archived
+  ownedBy     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  governanceGates  GovernanceGate[]
+  evidenceItems    EvidenceItem[]
+
+  @@map("governance_cases")
+}
+
+model GovernanceGate {
+  id          String      @id @default(cuid())
+  caseId      String
+  name        String
+  description String?
+  order       Int
+  required    Boolean     @default(true)
+  status      GateStatus  @default(PENDING)
+  approvedAt  DateTime?
+  approvedBy  String?
+  rejectedAt  DateTime?
+  rejectedBy  String?
+  exceptionRef String?
+  createdAt   DateTime    @default(now())
+
+  case             GovernanceCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  approvalRequests ApprovalRequest[]
+
+  @@map("governance_gates")
+}
+
+// ─────────────────────────────────────────────
+// APPROVALS
+// ─────────────────────────────────────────────
+
+model ApprovalRequest {
+  id           String         @id @default(cuid())
+  gateId       String
+  requestedById String?
+  requestedAt  DateTime       @default(now())
+  status       ApprovalStatus @default(PENDING)
+  resolvedById String?
+  resolvedAt   DateTime?
+  notes        String?
+  expiresAt    DateTime?
+
+  gate        GovernanceGate @relation(fields: [gateId], references: [id], onDelete: Cascade)
+  requestedBy User?          @relation("RequestedBy", fields: [requestedById], references: [id])
+  resolvedBy  User?          @relation("ResolvedBy", fields: [resolvedById], references: [id])
+
+  @@map("approval_requests")
+}
+
+// ─────────────────────────────────────────────
+// EVIDENCE ENGINE
+// Immutable, append-only. No soft deletes.
+// ─────────────────────────────────────────────
+
+model EvidenceItem {
+  id          String       @id @default(cuid())
+  projectId   String
+  caseId      String?
+  type        EvidenceType
+  title       String
+  description String?
+  content     String?
+  fileUrl     String?
+  hash        String?
+  submittedBy String
+  submittedAt DateTime     @default(now())
+  externalRef String?
+
+  project            Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  case               GovernanceCase?     @relation(fields: [caseId], references: [id])
+  regulatoryMappings RegulatoryMapping[]
+
+  @@index([projectId])
+  @@map("evidence_items")
+}
+
+// ─────────────────────────────────────────────
+// REGULATORY MAPPING
+// ─────────────────────────────────────────────
+
+model RegulatoryMapping {
+  id           String              @id @default(cuid())
+  projectId    String
+  evidenceId   String
+  framework    RegulatoryFramework
+  controlId    String
+  controlName  String?
+  description  String?
+  mappedBy     String
+  mappedAt     DateTime            @default(now())
+  verifiedAt   DateTime?
+  verifiedBy   String?
+
+  project  Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evidence EvidenceItem @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@unique([evidenceId, framework, controlId])
+  @@map("regulatory_mappings")
+}
+
+// ─────────────────────────────────────────────
+// RISK REGISTER
+// ─────────────────────────────────────────────
+
+model RiskItem {
+  id          String       @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  category    String       // technical|schedule|regulatory|operational|ai|third-party
+  severity    RiskSeverity
+  status      RiskStatus   @default(OPEN)
+  mitigation  String?
+  owner       String?
+  source      String       @default("manual") // manual|ai-extracted|governance-event
+  sourceRef   String?
+  raisedAt    DateTime     @default(now())
+  resolvedAt  DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("risk_items")
+}
+
+// ─────────────────────────────────────────────
+// DORA THIRD-PARTY REGISTER
+// Required by DORA Article 28
+// ─────────────────────────────────────────────
+
+model ThirdPartyDependency {
+  id               String   @id @default(cuid())
+  projectId        String
+  vendorName       String
+  serviceType      String   // cloud|saas|ai-model|data|security|identity
+  criticality      String   // critical|important|standard
+  contractRef      String?
+  dataProcessed    String?
+  regionOfHosting  String?
+  certifications   String[]
+  lastReviewedAt   DateTime?
+  nextReviewDue    DateTime?
+  registeredBy     String
+  registeredAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("third_party_dependencies")
+}

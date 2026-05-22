@@ -1,0 +1,109 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git pull)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(jest *)",
+      "Bash(node *)",
+      "Bash(ls *)",
+      "Bash(find . -name *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:nextjs.org)",
+      "WebFetch(domain:prisma.io)",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:shadcn.com)",
+      "WebFetch(domain:zod.dev)",
+      "WebFetch(domain:nestjs.com)",
+      "WebFetch(domain:eur-lex.europa.eu)",
+      "WebFetch(domain:eba.europa.eu)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(git push --force)",
+      "Bash(npx prisma migrate reset)",
+      "Bash(DROP TABLE *)",
+      "Bash(DELETE FROM *)",
+      "Bash(TRUNCATE *)"
+    ]
+  },
+  "env": {
+    "NEXORI_ENV": "development",
+    "NEXORI_PRODUCT": "NexoriOS",
+    "NEXORI_VERSION": "0.1.0-mvp",
+    "AI_GOVERNANCE_STRICT": "true",
+    "REGULATORY_MODE": "DORA_EU_AI_ACT",
+    "AUDIT_LOGGING": "enabled",
+    "RAG_CHUNK_SIZE": "512",
+    "RAG_TOP_K": "5"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[NexoriOS] Executing bash — ensure governance events are emitted for any DB mutations' >&2"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(npx prisma migrate *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[NexoriOS] Migration applied. Verify GovernanceEvent schema unchanged and audit indexes intact.' >&2"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git commit *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[NexoriOS] Commit recorded. Check: GovernanceEvents emitted? AIUsageEvents logged? Zod validation on new routes?' >&2"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[NexoriOS Session End] No uncommitted schema changes? All AI calls logged? Regulatory flags reviewed?' >&2"
+          }
+        ]
+      }
+    ]
+  },
+  "model": "claude-sonnet-4-6",
+  "includeCoAuthoredBy": true,
+  "cleanupPeriodDays": 30
+}
