@@ -23,13 +23,13 @@ describe("computeHealthScore", () => {
   });
 
   it("critical risk presence reduces score", () => {
-    const noRisk   = computeHealthScore(10, 10, 0, 5, 10, 10);
+    const noRisk = computeHealthScore(10, 10, 0, 5, 10, 10);
     const withRisk = computeHealthScore(10, 10, 3, 5, 10, 10);
     expect(withRisk).toBeLessThan(noRisk);
   });
 
   it("partial evidence reduces score", () => {
-    const full    = computeHealthScore(10, 10, 0, 0, 10, 10);
+    const full = computeHealthScore(10, 10, 0, 0, 10, 10);
     const partial = computeHealthScore(10, 10, 0, 0, 5, 10);
     expect(partial).toBeLessThan(full);
   });

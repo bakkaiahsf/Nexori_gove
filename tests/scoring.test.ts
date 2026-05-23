@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  compositeToIntensity,
-  intensityToAIMode,
-} from "@/lib/scoring/engine";
+import { compositeToIntensity, intensityToAIMode } from "@/lib/scoring/engine";
 import {
   scoreProductionImpact,
   scoreAIInvolvement,
@@ -183,7 +180,9 @@ describe("scoreBlastRadius", () => {
     expect(scoreBlastRadius(makeInput({ linkedSystemIds: ["s1"] }))).toBe(0.3);
   });
   it("6+ linked systems → 1.0", () => {
-    expect(scoreBlastRadius(makeInput({ linkedSystemIds: ["s1","s2","s3","s4","s5","s6"] }))).toBe(1.0);
+    expect(
+      scoreBlastRadius(makeInput({ linkedSystemIds: ["s1", "s2", "s3", "s4", "s5", "s6"] }))
+    ).toBe(1.0);
   });
 });
 
@@ -205,13 +204,17 @@ describe("scoreSecuritySensitivity", () => {
 // ── scoreCustomerImpact ───────────────────────────────────────────────────────
 describe("scoreCustomerImpact", () => {
   it("production + personal data → 0.9", () => {
-    expect(scoreCustomerImpact(makeInput({ environment: "production", dataClassification: "personal" }))).toBe(0.9);
+    expect(
+      scoreCustomerImpact(makeInput({ environment: "production", dataClassification: "personal" }))
+    ).toBe(0.9);
   });
   it("production only → 0.6", () => {
     expect(scoreCustomerImpact(makeInput({ environment: "production" }))).toBe(0.6);
   });
   it("staging + personal → 0.5", () => {
-    expect(scoreCustomerImpact(makeInput({ environment: "staging", dataClassification: "personal" }))).toBe(0.5);
+    expect(
+      scoreCustomerImpact(makeInput({ environment: "staging", dataClassification: "personal" }))
+    ).toBe(0.5);
   });
   it("staging, no sensitive data → 0.2", () => {
     expect(scoreCustomerImpact(makeInput({ environment: "staging" }))).toBe(0.2);
@@ -221,12 +224,24 @@ describe("scoreCustomerImpact", () => {
 // ── Integration: high-risk AI deployment scores enhanced ─────────────────────
 describe("composite intensity integration", () => {
   it("AI production deployment with EU frameworks scores enhanced", () => {
-    const WEIGHTS = { regulatoryExp: 20, productionImpact: 15, aiInvolvement: 15, customerImpact: 10, dataExposure: 10, blastRadius: 8, securitySens: 8, deploymentCrit: 5, infraImpact: 4, thirdPartyRisk: 3, incidentHistory: 2 } as const;
+    const WEIGHTS = {
+      regulatoryExp: 20,
+      productionImpact: 15,
+      aiInvolvement: 15,
+      customerImpact: 10,
+      dataExposure: 10,
+      blastRadius: 8,
+      securitySens: 8,
+      deploymentCrit: 5,
+      infraImpact: 4,
+      thirdPartyRisk: 3,
+      incidentHistory: 2,
+    } as const;
     const input = makeInput({
       environment: "production",
       dataClassification: "personal",
       aiSystemInvolved: true,
-      thirdPartyChanges: true,  // new AI model provider = DORA third-party signal
+      thirdPartyChanges: true, // new AI model provider = DORA third-party signal
       infrastructureChange: true,
       linkedSystemIds: ["svc1", "svc2", "svc3"],
       priorIncidents: 2,
@@ -236,22 +251,23 @@ describe("composite intensity integration", () => {
     input.openSecurityFindings = 1;
 
     const dims = {
-      regulatoryExp:    scoreRegulatoryExposure(input),
+      regulatoryExp: scoreRegulatoryExposure(input),
       productionImpact: scoreProductionImpact(input),
-      aiInvolvement:    scoreAIInvolvement(input),
-      customerImpact:   scoreCustomerImpact(input),
-      dataExposure:     scoreDataExposure(input),
-      blastRadius:      scoreBlastRadius(input),
-      securitySens:     scoreSecuritySensitivity(input),
-      deploymentCrit:   0.5,
-      infraImpact:      scoreInfrastructureImpact(input),
-      thirdPartyRisk:   scoreThirdPartyRisk(input),
-      incidentHistory:  scoreIncidentHistory(input),
+      aiInvolvement: scoreAIInvolvement(input),
+      customerImpact: scoreCustomerImpact(input),
+      dataExposure: scoreDataExposure(input),
+      blastRadius: scoreBlastRadius(input),
+      securitySens: scoreSecuritySensitivity(input),
+      deploymentCrit: 0.5,
+      infraImpact: scoreInfrastructureImpact(input),
+      thirdPartyRisk: scoreThirdPartyRisk(input),
+      incidentHistory: scoreIncidentHistory(input),
     };
 
     const composite = Math.round(
       (Object.keys(WEIGHTS) as Array<keyof typeof WEIGHTS>).reduce(
-        (sum, k) => sum + dims[k] * WEIGHTS[k], 0
+        (sum, k) => sum + dims[k] * WEIGHTS[k],
+        0
       )
     );
 
@@ -260,7 +276,19 @@ describe("composite intensity integration", () => {
   });
 
   it("UI text change scores minimal", () => {
-    const WEIGHTS = { regulatoryExp: 20, productionImpact: 15, aiInvolvement: 15, customerImpact: 10, dataExposure: 10, blastRadius: 8, securitySens: 8, deploymentCrit: 5, infraImpact: 4, thirdPartyRisk: 3, incidentHistory: 2 } as const;
+    const WEIGHTS = {
+      regulatoryExp: 20,
+      productionImpact: 15,
+      aiInvolvement: 15,
+      customerImpact: 10,
+      dataExposure: 10,
+      blastRadius: 8,
+      securitySens: 8,
+      deploymentCrit: 5,
+      infraImpact: 4,
+      thirdPartyRisk: 3,
+      incidentHistory: 2,
+    } as const;
     const input = makeInput({
       environment: "staging",
       dataClassification: "internal",
@@ -272,22 +300,23 @@ describe("composite intensity integration", () => {
     });
 
     const dims = {
-      regulatoryExp:    scoreRegulatoryExposure(input),
+      regulatoryExp: scoreRegulatoryExposure(input),
       productionImpact: scoreProductionImpact(input),
-      aiInvolvement:    scoreAIInvolvement(input),
-      customerImpact:   scoreCustomerImpact(input),
-      dataExposure:     scoreDataExposure(input),
-      blastRadius:      scoreBlastRadius(input),
-      securitySens:     scoreSecuritySensitivity(input),
-      deploymentCrit:   0.3,
-      infraImpact:      scoreInfrastructureImpact(input),
-      thirdPartyRisk:   scoreThirdPartyRisk(input),
-      incidentHistory:  scoreIncidentHistory(input),
+      aiInvolvement: scoreAIInvolvement(input),
+      customerImpact: scoreCustomerImpact(input),
+      dataExposure: scoreDataExposure(input),
+      blastRadius: scoreBlastRadius(input),
+      securitySens: scoreSecuritySensitivity(input),
+      deploymentCrit: 0.3,
+      infraImpact: scoreInfrastructureImpact(input),
+      thirdPartyRisk: scoreThirdPartyRisk(input),
+      incidentHistory: scoreIncidentHistory(input),
     };
 
     const composite = Math.round(
       (Object.keys(WEIGHTS) as Array<keyof typeof WEIGHTS>).reduce(
-        (sum, k) => sum + dims[k] * WEIGHTS[k], 0
+        (sum, k) => sum + dims[k] * WEIGHTS[k],
+        0
       )
     );
 

@@ -111,9 +111,7 @@ export async function requestGovernanceWaiver(req: WaiverRequest): Promise<Waive
           intensity: governanceCase.riskScore?.intensity,
         }
       : null,
-    gateSnapshot: gate
-      ? { id: gate.id, name: gate.name, status: gate.status }
-      : null,
+    gateSnapshot: gate ? { id: gate.id, name: gate.name, status: gate.status } : null,
     usageEventId,
   };
 

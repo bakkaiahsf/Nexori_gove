@@ -72,20 +72,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   };
 
   const dims = {
-    regulatoryExp:    scoreRegulatoryExposure(input),
+    regulatoryExp: scoreRegulatoryExposure(input),
     productionImpact: scoreProductionImpact(input),
-    aiInvolvement:    scoreAIInvolvement(input),
-    customerImpact:   scoreCustomerImpact(input),
-    dataExposure:     scoreDataExposure(input),
-    blastRadius:      scoreBlastRadius(input),
-    securitySens:     scoreSecuritySensitivity(input),
-    deploymentCrit:   scoreDeploymentCriticality(input),
-    infraImpact:      scoreInfrastructureImpact(input),
-    thirdPartyRisk:   scoreThirdPartyRisk(input),
-    incidentHistory:  scoreIncidentHistory(input),
+    aiInvolvement: scoreAIInvolvement(input),
+    customerImpact: scoreCustomerImpact(input),
+    dataExposure: scoreDataExposure(input),
+    blastRadius: scoreBlastRadius(input),
+    securitySens: scoreSecuritySensitivity(input),
+    deploymentCrit: scoreDeploymentCriticality(input),
+    infraImpact: scoreInfrastructureImpact(input),
+    thirdPartyRisk: scoreThirdPartyRisk(input),
+    incidentHistory: scoreIncidentHistory(input),
   };
 
-  const WEIGHTS = { regulatoryExp: 20, productionImpact: 15, aiInvolvement: 15, customerImpact: 10, dataExposure: 10, blastRadius: 8, securitySens: 8, deploymentCrit: 5, infraImpact: 4, thirdPartyRisk: 3, incidentHistory: 2 } as const;
+  const WEIGHTS = {
+    regulatoryExp: 20,
+    productionImpact: 15,
+    aiInvolvement: 15,
+    customerImpact: 10,
+    dataExposure: 10,
+    blastRadius: 8,
+    securitySens: 8,
+    deploymentCrit: 5,
+    infraImpact: 4,
+    thirdPartyRisk: 3,
+    incidentHistory: 2,
+  } as const;
 
   const compositeScore = Math.round(
     (Object.keys(WEIGHTS) as Array<keyof typeof WEIGHTS>).reduce(
@@ -99,7 +111,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Preview: what gates WOULD be included (no DB writes)
   const applicableGates = await prisma.gateDefinition.findMany({
     where: { enabled: true, intensityTriggers: { hasSome: [intensity] } },
-    select: { slug: true, name: true, category: true, defaultSlaHours: true, skipConditions: true, approverRoles: true },
+    select: {
+      slug: true,
+      name: true,
+      category: true,
+      defaultSlaHours: true,
+      skipConditions: true,
+      approverRoles: true,
+    },
     orderBy: { defaultSlaHours: "asc" },
   });
 
@@ -122,7 +141,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const v = contextMap[c.field];
       if (c.op === "eq") return v === c.value;
       if (c.op === "neq") return v !== c.value;
-      if (c.op === "notContains") return Array.isArray(v) ? !v.includes(c.value) : !String(v ?? "").includes(String(c.value));
+      if (c.op === "notContains")
+        return Array.isArray(v) ? !v.includes(c.value) : !String(v ?? "").includes(String(c.value));
       if (c.op === "notIn") return !(c.value as unknown[]).includes(v);
       return false;
     });

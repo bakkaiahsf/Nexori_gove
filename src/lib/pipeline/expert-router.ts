@@ -32,9 +32,7 @@ export async function routeApproval(
 
   // Prefer jurisdiction match
   const jurisdictionMatch = experts.find(
-    (e) =>
-      e.jurisdictions.includes(jurisdiction) ||
-      e.jurisdictions.includes("GLOBAL")
+    (e) => e.jurisdictions.includes(jurisdiction) || e.jurisdictions.includes("GLOBAL")
   );
 
   const selected = jurisdictionMatch ?? experts[0];

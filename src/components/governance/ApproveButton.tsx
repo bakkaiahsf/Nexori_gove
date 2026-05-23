@@ -34,8 +34,8 @@ export default function ApproveButton({ approvalId }: { approvalId: string }) {
         state === "done"
           ? "bg-surface-container-high text-primary border border-primary cursor-default"
           : state === "loading"
-          ? "bg-primary/50 text-on-primary cursor-wait"
-          : "bg-primary text-on-primary hover:brightness-110"
+            ? "bg-primary/50 text-on-primary cursor-wait"
+            : "bg-primary text-on-primary hover:brightness-110"
       }`}
     >
       {state === "done" ? "✓ APPROVED" : state === "loading" ? "..." : "APPROVE"}

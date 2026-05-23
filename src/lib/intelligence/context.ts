@@ -97,8 +97,12 @@ export async function enrichGovernanceContext(
     `Third-Party Changes: ${epicData.thirdPartyChanges}`,
     `Regulatory Domain: ${epicData.regulatoryDomain ?? "not specified"}`,
     `Jurisdiction: ${epicData.jurisdiction ?? "not specified"}`,
-    priorCases.length > 0 ? `Prior governance cases for this epic: ${priorCases.map((c) => c.title).join(", ")}` : "",
-    confluenceSummaries.length > 0 ? `\nConfluence context:\n${confluenceSummaries.join("\n---\n")}` : "",
+    priorCases.length > 0
+      ? `Prior governance cases for this epic: ${priorCases.map((c) => c.title).join(", ")}`
+      : "",
+    confluenceSummaries.length > 0
+      ? `\nConfluence context:\n${confluenceSummaries.join("\n---\n")}`
+      : "",
     policyContext ? `\nRelevant internal policy:\n${policyContext}` : "",
   ]
     .filter(Boolean)

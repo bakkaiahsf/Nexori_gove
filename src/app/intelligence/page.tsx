@@ -4,21 +4,22 @@ import { RegulatoryFramework } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const FRAMEWORK_META: Record<RegulatoryFramework, { full: string; sector: string; icon: string }> = {
-  DORA:      { full: "Digital Operational Resilience Act",        sector: "FINANCIAL SECTOR",     icon: "D" },
-  EU_AI_ACT: { full: "EU Artificial Intelligence Act",            sector: "MODEL GOVERNANCE",     icon: "A" },
-  SOC2:      { full: "SOC 2 Type II",                             sector: "DATA SECURITY",        icon: "S" },
-  ISO_27001: { full: "ISO/IEC 27001:2022",                        sector: "INFORMATION SECURITY", icon: "I" },
-  PCI_DSS:   { full: "PCI-DSS v4.0",                             sector: "PAYMENT SECURITY",     icon: "P" },
-  GDPR:      { full: "General Data Protection Regulation",        sector: "DATA PRIVACY",         icon: "G" },
-};
+const FRAMEWORK_META: Record<RegulatoryFramework, { full: string; sector: string; icon: string }> =
+  {
+    DORA: { full: "Digital Operational Resilience Act", sector: "FINANCIAL SECTOR", icon: "D" },
+    EU_AI_ACT: { full: "EU Artificial Intelligence Act", sector: "MODEL GOVERNANCE", icon: "A" },
+    SOC2: { full: "SOC 2 Type II", sector: "DATA SECURITY", icon: "S" },
+    ISO_27001: { full: "ISO/IEC 27001:2022", sector: "INFORMATION SECURITY", icon: "I" },
+    PCI_DSS: { full: "PCI-DSS v4.0", sector: "PAYMENT SECURITY", icon: "P" },
+    GDPR: { full: "General Data Protection Regulation", sector: "DATA PRIVACY", icon: "G" },
+  };
 
 // Deterministic heatmap cell colour (no hydration mismatch)
 function heatCell(i: number, criticalPct: number): string {
   const v = Math.abs(Math.sin(i * 57.3 + 13.7) * 1000) % 1;
   if (v > 1 - criticalPct * 0.15) return "#D64545";
   if (v > 0.82) return "#ffba3e";
-  if (v > 0.4)  return "#50dbcb33";
+  if (v > 0.4) return "#50dbcb33";
   return "#1C2635";
 }
 
@@ -46,14 +47,19 @@ export default async function Intelligence() {
   const frameworkCount = frameworks.length;
   const totalMappings = mappings.length;
   const criticalPct = summary.criticalRisks / Math.max(summary.totalRisks, 1);
-  const evidencePct = summary.totalEvidence > 0
-    ? Math.round((summary.evidenceMapped / summary.totalEvidence) * 100)
-    : 0;
+  const evidencePct =
+    summary.totalEvidence > 0
+      ? Math.round((summary.evidenceMapped / summary.totalEvidence) * 100)
+      : 0;
 
   // Build framework summary for the cards
   const frameworkSummary = frameworks.map((f) => ({
     ...f,
-    meta: FRAMEWORK_META[f.framework] ?? { full: f.framework, sector: "REGULATORY", icon: f.framework[0] },
+    meta: FRAMEWORK_META[f.framework] ?? {
+      full: f.framework,
+      sector: "REGULATORY",
+      icon: f.framework[0],
+    },
   }));
 
   return (
@@ -63,7 +69,8 @@ export default async function Intelligence() {
         <div className="flex items-center gap-xl">
           <h1 className="font-headline-md text-headline-md text-on-surface">Intelligence</h1>
           <span className="font-body-base text-body-base text-on-surface-variant">
-            {frameworkCount} regulatory framework{frameworkCount !== 1 ? "s" : ""} · {totalMappings} control mapping{totalMappings !== 1 ? "s" : ""}
+            {frameworkCount} regulatory framework{frameworkCount !== 1 ? "s" : ""} · {totalMappings}{" "}
+            control mapping{totalMappings !== 1 ? "s" : ""}
           </span>
         </div>
         <div className="flex items-center gap-md">
@@ -78,7 +85,6 @@ export default async function Intelligence() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1440px] mx-auto grid grid-cols-12 gap-lg">
-
           {/* Compliance Coverage Heatmap */}
           <div className="col-span-12 lg:col-span-8 bg-surface border border-border-muted p-xl">
             <div className="flex items-center justify-between mb-xl">
@@ -101,9 +107,9 @@ export default async function Intelligence() {
             <div className="flex gap-lg font-mono-technical text-[10px] text-on-surface-variant">
               {[
                 { color: "#50dbcb33", label: "FULL COMPLIANCE" },
-                { color: "#ffba3e",   label: "MINOR GAP" },
-                { color: "#D64545",   label: "CRITICAL BREACH" },
-                { color: "#1C2635",   label: "NO DATA" },
+                { color: "#ffba3e", label: "MINOR GAP" },
+                { color: "#D64545", label: "CRITICAL BREACH" },
+                { color: "#1C2635", label: "NO DATA" },
               ].map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-xs">
                   <div className="w-2 h-2" style={{ backgroundColor: color }} />
@@ -120,9 +126,23 @@ export default async function Intelligence() {
             </h3>
             <div className="space-y-lg">
               {[
-                { label: "REGULATORY MAPPINGS",  pct: evidencePct },
-                { label: "GATES APPROVED",        pct: summary.totalGates > 0 ? Math.round((summary.approvedGates / summary.totalGates) * 100) : 0 },
-                { label: "RISKS MITIGATED",       pct: summary.totalRisks > 0 ? Math.round(((summary.totalRisks - summary.openRisks) / summary.totalRisks) * 100) : 0 },
+                { label: "REGULATORY MAPPINGS", pct: evidencePct },
+                {
+                  label: "GATES APPROVED",
+                  pct:
+                    summary.totalGates > 0
+                      ? Math.round((summary.approvedGates / summary.totalGates) * 100)
+                      : 0,
+                },
+                {
+                  label: "RISKS MITIGATED",
+                  pct:
+                    summary.totalRisks > 0
+                      ? Math.round(
+                          ((summary.totalRisks - summary.openRisks) / summary.totalRisks) * 100
+                        )
+                      : 0,
+                },
               ].map(({ label, pct }) => (
                 <div key={label}>
                   <div className="flex justify-between mb-sm font-mono-technical text-[10px] text-on-surface-variant">
@@ -162,23 +182,34 @@ export default async function Intelligence() {
             </div>
             <div className="divide-y divide-border-muted">
               {frameworkSummary.map((f) => (
-                <div key={f.framework} className="p-lg flex items-center gap-lg hover:bg-surface-container-high transition-colors cursor-pointer">
+                <div
+                  key={f.framework}
+                  className="p-lg flex items-center gap-lg hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
                   <div className="w-8 h-8 bg-surface-container-high border border-border-muted flex items-center justify-center font-mono-technical text-[11px] text-on-surface shrink-0">
                     {f.meta.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-body-bold text-body-bold text-on-surface truncate">{f.meta.full}</p>
-                    <p className="font-mono-technical text-[10px] text-on-surface-variant">{f.meta.sector}</p>
+                    <p className="font-body-bold text-body-bold text-on-surface truncate">
+                      {f.meta.full}
+                    </p>
+                    <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                      {f.meta.sector}
+                    </p>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="font-mono-technical text-[10px] text-primary">STABLE</span>
-                    <p className="font-mono-technical text-[10px] text-on-surface-variant">{f._count.id} MAPPINGS</p>
+                    <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                      {f._count.id} MAPPINGS
+                    </p>
                   </div>
                 </div>
               ))}
               {frameworkSummary.length === 0 && (
                 <div className="p-lg">
-                  <p className="font-mono-technical text-[11px] text-on-surface-variant">No framework mappings yet.</p>
+                  <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                    No framework mappings yet.
+                  </p>
                 </div>
               )}
             </div>
@@ -196,27 +227,34 @@ export default async function Intelligence() {
             </div>
             <div className="divide-y divide-border-muted">
               {thirdParties.map((t) => (
-                <div key={t.id} className="p-lg flex items-center gap-lg hover:bg-surface-container-high transition-colors">
+                <div
+                  key={t.id}
+                  className="p-lg flex items-center gap-lg hover:bg-surface-container-high transition-colors"
+                >
                   <div className="flex-1 min-w-0">
                     <p className="font-body-bold text-body-bold text-on-surface">{t.vendorName}</p>
                     <p className="font-mono-technical text-[10px] text-on-surface-variant">
                       {t.serviceType.toUpperCase()} · {t.regionOfHosting ?? "REGION N/A"}
                     </p>
                   </div>
-                  <span className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase shrink-0 ${
-                    t.criticality === "critical"
-                      ? "bg-critical/10 text-critical border border-critical"
-                      : t.criticality === "important"
-                      ? "bg-tertiary/20 text-tertiary border border-tertiary"
-                      : "bg-primary/10 text-primary border border-primary"
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase shrink-0 ${
+                      t.criticality === "critical"
+                        ? "bg-critical/10 text-critical border border-critical"
+                        : t.criticality === "important"
+                          ? "bg-tertiary/20 text-tertiary border border-tertiary"
+                          : "bg-primary/10 text-primary border border-primary"
+                    }`}
+                  >
                     {t.criticality}
                   </span>
                 </div>
               ))}
               {thirdParties.length === 0 && (
                 <div className="p-lg">
-                  <p className="font-mono-technical text-[11px] text-on-surface-variant">No third-party dependencies registered.</p>
+                  <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                    No third-party dependencies registered.
+                  </p>
                 </div>
               )}
             </div>
@@ -236,8 +274,18 @@ export default async function Intelligence() {
               <table className="w-full text-left">
                 <thead className="bg-surface-container-low border-b border-border-muted">
                   <tr>
-                    {["FRAMEWORK", "CONTROL ID", "CONTROL NAME", "EVIDENCE", "MAPPED BY", "STATUS"].map((h) => (
-                      <th key={h} className="px-xl py-md font-label-caps text-label-caps text-on-surface-variant">
+                    {[
+                      "FRAMEWORK",
+                      "CONTROL ID",
+                      "CONTROL NAME",
+                      "EVIDENCE",
+                      "MAPPED BY",
+                      "STATUS",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-xl py-md font-label-caps text-label-caps text-on-surface-variant"
+                      >
                         {h}
                       </th>
                     ))}
@@ -264,11 +312,13 @@ export default async function Intelligence() {
                         {m.mappedBy}
                       </td>
                       <td className="px-xl py-md">
-                        <span className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase ${
-                          m.verifiedAt
-                            ? "bg-primary/10 text-primary border border-primary"
-                            : "bg-tertiary/20 text-tertiary border border-tertiary"
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase ${
+                            m.verifiedAt
+                              ? "bg-primary/10 text-primary border border-primary"
+                              : "bg-tertiary/20 text-tertiary border border-tertiary"
+                          }`}
+                        >
                           {m.verifiedAt ? "VERIFIED" : "PENDING"}
                         </span>
                       </td>
@@ -276,7 +326,10 @@ export default async function Intelligence() {
                   ))}
                   {mappings.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-xl py-lg font-mono-technical text-[11px] text-on-surface-variant">
+                      <td
+                        colSpan={6}
+                        className="px-xl py-lg font-mono-technical text-[11px] text-on-surface-variant"
+                      >
                         No control mappings recorded.
                       </td>
                     </tr>

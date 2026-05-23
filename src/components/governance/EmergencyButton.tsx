@@ -46,11 +46,15 @@ export default function EmergencyButton({ isLocked }: { isLocked: boolean }) {
         state === "loading"
           ? "bg-critical/50 text-on-error cursor-wait"
           : state === "done"
-          ? "bg-critical text-on-error cursor-default"
-          : "bg-critical text-on-error"
+            ? "bg-critical text-on-error cursor-default"
+            : "bg-critical text-on-error"
       }`}
     >
-      {state === "loading" ? "ENGAGING..." : state === "done" ? "LOCK ENGAGED" : "Initiate Shutdown"}
+      {state === "loading"
+        ? "ENGAGING..."
+        : state === "done"
+          ? "LOCK ENGAGED"
+          : "Initiate Shutdown"}
     </button>
   );
 }

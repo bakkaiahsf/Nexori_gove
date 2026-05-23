@@ -23,18 +23,18 @@ function phaseLabel(phase: string): string {
 }
 
 const CRITICALITY_CLASS: Record<string, string> = {
-  critical:  "bg-critical/10 text-critical border border-critical",
+  critical: "bg-critical/10 text-critical border border-critical",
   important: "bg-tertiary/20 text-tertiary border border-tertiary",
-  standard:  "bg-primary/10 text-primary border border-primary",
+  standard: "bg-primary/10 text-primary border border-primary",
 };
 
 const SERVICE_LABEL: Record<string, string> = {
   "ai-model": "AI MODEL",
-  cloud:      "CLOUD",
-  saas:       "SAAS",
-  data:       "DATA",
-  security:   "SECURITY",
-  identity:   "IDENTITY",
+  cloud: "CLOUD",
+  saas: "SAAS",
+  data: "DATA",
+  security: "SECURITY",
+  identity: "IDENTITY",
 };
 
 export default async function AIControl() {
@@ -82,7 +82,6 @@ export default async function AIControl() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1440px] mx-auto grid grid-cols-12 gap-lg">
-
           {/* Emergency Protocol */}
           <div className="col-span-12 md:col-span-4 bg-surface-elevated border border-critical p-xl">
             <h3 className="font-label-caps text-label-caps text-critical tracking-widest mb-sm">
@@ -123,40 +122,49 @@ export default async function AIControl() {
               <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
                 HUMAN-IN-THE-LOOP
               </h3>
-              <span className={`px-2 py-0.5 font-mono-technical text-[10px] ${
-                approvals.length > 0
-                  ? "bg-tertiary/20 text-tertiary border border-tertiary"
-                  : "bg-primary/10 text-primary border border-primary"
-              }`}>
+              <span
+                className={`px-2 py-0.5 font-mono-technical text-[10px] ${
+                  approvals.length > 0
+                    ? "bg-tertiary/20 text-tertiary border border-tertiary"
+                    : "bg-primary/10 text-primary border border-primary"
+                }`}
+              >
                 {approvals.length} PENDING
               </span>
             </div>
             <div className="divide-y divide-border-muted">
               {approvals.length === 0 ? (
                 <div className="p-lg">
-                  <p className="font-mono-technical text-[11px] text-primary">All approvals complete.</p>
-                </div>
-              ) : approvals.map((a) => (
-                <div key={a.id} className="p-lg hover:bg-surface-container-high transition-colors">
-                  <div className="flex items-center justify-between mb-sm">
-                    <span className="font-mono-technical text-[11px] text-on-surface-variant">
-                      #{a.id.slice(-6).toUpperCase()}
-                    </span>
-                    <span className="font-mono-technical text-[10px] text-tertiary">
-                      {phaseLabel(a.gate.case.phase)}
-                    </span>
-                  </div>
-                  <p className="font-body-bold text-body-bold text-on-surface mb-md truncate">
-                    {a.gate.name}
+                  <p className="font-mono-technical text-[11px] text-primary">
+                    All approvals complete.
                   </p>
-                  <div className="flex gap-sm">
-                    <ApproveButton approvalId={a.id} />
-                    <button className="flex-1 border border-border-muted text-on-surface-variant font-label-caps text-label-caps py-xs hover:border-on-surface-variant transition-colors">
-                      REJECT
-                    </button>
-                  </div>
                 </div>
-              ))}
+              ) : (
+                approvals.map((a) => (
+                  <div
+                    key={a.id}
+                    className="p-lg hover:bg-surface-container-high transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-sm">
+                      <span className="font-mono-technical text-[11px] text-on-surface-variant">
+                        #{a.id.slice(-6).toUpperCase()}
+                      </span>
+                      <span className="font-mono-technical text-[10px] text-tertiary">
+                        {phaseLabel(a.gate.case.phase)}
+                      </span>
+                    </div>
+                    <p className="font-body-bold text-body-bold text-on-surface mb-md truncate">
+                      {a.gate.name}
+                    </p>
+                    <div className="flex gap-sm">
+                      <ApproveButton approvalId={a.id} />
+                      <button className="flex-1 border border-border-muted text-on-surface-variant font-label-caps text-label-caps py-xs hover:border-on-surface-variant transition-colors">
+                        REJECT
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -177,8 +185,18 @@ export default async function AIControl() {
               <table className="w-full text-left">
                 <thead className="bg-surface-container-low border-b border-border-muted">
                   <tr>
-                    {["VENDOR", "SERVICE TYPE", "CRITICALITY", "REGION", "NEXT REVIEW", "STATUS"].map((h) => (
-                      <th key={h} className="px-xl py-md font-label-caps text-label-caps text-on-surface-variant">
+                    {[
+                      "VENDOR",
+                      "SERVICE TYPE",
+                      "CRITICALITY",
+                      "REGION",
+                      "NEXT REVIEW",
+                      "STATUS",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-xl py-md font-label-caps text-label-caps text-on-surface-variant"
+                      >
                         {h}
                       </th>
                     ))}
@@ -194,9 +212,11 @@ export default async function AIControl() {
                         {SERVICE_LABEL[t.serviceType] ?? t.serviceType.toUpperCase()}
                       </td>
                       <td className="px-xl py-md">
-                        <span className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase ${
-                          CRITICALITY_CLASS[t.criticality] ?? CRITICALITY_CLASS.standard
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 font-mono-technical text-[10px] uppercase ${
+                            CRITICALITY_CLASS[t.criticality] ?? CRITICALITY_CLASS.standard
+                          }`}
+                        >
                           {t.criticality}
                         </span>
                       </td>
@@ -226,8 +246,12 @@ export default async function AIControl() {
       <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center justify-between px-xl font-mono-technical text-[10px] text-on-surface-variant shrink-0">
         <div className="flex items-center gap-xl">
           <div className="flex items-center gap-xs">
-            <span className={`w-2 h-2 rounded-full ${isEmergencyLocked ? "bg-critical animate-pulse" : "bg-primary animate-pulse"}`} />
-            <span>{isEmergencyLocked ? "AI_GOVERNANCE: LOCKED" : "AI_GOVERNANCE: OPERATIONAL"}</span>
+            <span
+              className={`w-2 h-2 rounded-full ${isEmergencyLocked ? "bg-critical animate-pulse" : "bg-primary animate-pulse"}`}
+            />
+            <span>
+              {isEmergencyLocked ? "AI_GOVERNANCE: LOCKED" : "AI_GOVERNANCE: OPERATIONAL"}
+            </span>
           </div>
           <span>MODE: {currentMode.replace(/_/g, " ")}</span>
           <span>POLICY_VERSION: v3.1.4-DORA</span>

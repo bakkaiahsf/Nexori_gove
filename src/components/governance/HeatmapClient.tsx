@@ -15,7 +15,7 @@ function cellColor(i: number, criticalRisks: number, openRisks: number): string 
   const critPct = criticalRisks / Math.max(openRisks, 1);
   if (v > 1 - critPct * 0.12) return "#D64545";
   if (v > 0.82) return "#ffba3e";
-  if (v > 0.30) return "#1C2635";
+  if (v > 0.3) return "#1C2635";
   return "#151D2A";
 }
 
@@ -41,7 +41,9 @@ export default function HeatmapClient({
           {LEGEND.map(({ bg, label }) => (
             <div key={label} className="flex items-center gap-xs">
               <div className={`w-2 h-2 ${bg}`} />
-              <span className="text-[10px] font-mono-technical text-on-surface-variant">{label}</span>
+              <span className="text-[10px] font-mono-technical text-on-surface-variant">
+                {label}
+              </span>
             </div>
           ))}
         </div>

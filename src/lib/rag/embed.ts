@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 
-const EMBEDDING_MODEL =
-  process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small";
+const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small";
 const EMBEDDING_DIMS = Number(process.env.OPENAI_EMBEDDING_DIMENSIONS ?? 1536);
 
 // Batch size kept low to respect OpenAI rate limits for embedding calls

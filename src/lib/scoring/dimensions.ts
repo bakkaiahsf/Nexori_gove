@@ -2,10 +2,10 @@ import type { GovernanceContext } from "@prisma/client";
 
 export interface DimensionInput {
   context: GovernanceContext;
-  regulatoryFrameworks: string[];  // e.g. ["DORA", "EU_AI_ACT"]
-  jurisdiction: string;            // "EU" | "UK" | "US" | "GLOBAL"
+  regulatoryFrameworks: string[]; // e.g. ["DORA", "EU_AI_ACT"]
+  jurisdiction: string; // "EU" | "UK" | "US" | "GLOBAL"
   openSecurityFindings: number;
-  releaseFrequencyDays: number;    // avg days between deploys for this system
+  releaseFrequencyDays: number; // avg days between deploys for this system
 }
 
 // ── Scoring helpers ────────────────────────────────────────────────────────────
@@ -43,7 +43,8 @@ export function scoreCustomerImpact(input: DimensionInput): number {
   const dc = input.context.dataClassification?.toLowerCase() ?? "";
   const env = input.context.environment?.toLowerCase() ?? "";
   const isCustomerFacing = env === "production" || env === "prod";
-  const hasSensitiveData = dc === "personal" || dc === "sensitive" || dc === "special-category" || dc === "restricted";
+  const hasSensitiveData =
+    dc === "personal" || dc === "sensitive" || dc === "special-category" || dc === "restricted";
   if (isCustomerFacing && hasSensitiveData) return 0.9;
   if (isCustomerFacing) return 0.6;
   if (hasSensitiveData) return 0.5;

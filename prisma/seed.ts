@@ -3,7 +3,18 @@
  * Realistic DORA ICT Risk Programme demo data.
  * Idempotent: upserts the project, skips if data already exists.
  */
-import { PrismaClient, Prisma, GateStatus, ApprovalStatus, RiskSeverity, RiskStatus, EvidenceType, RegulatoryFramework, GovernanceEventType, AIControlMode } from "@prisma/client";
+import {
+  PrismaClient,
+  Prisma,
+  GateStatus,
+  ApprovalStatus,
+  RiskSeverity,
+  RiskStatus,
+  EvidenceType,
+  RegulatoryFramework,
+  GovernanceEventType,
+  AIControlMode,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -27,7 +38,8 @@ async function main() {
     {
       slug: "technical-review",
       name: "Technical Sign-off",
-      description: "Engineering lead review of technical design, implementation approach, and test coverage.",
+      description:
+        "Engineering lead review of technical design, implementation approach, and test coverage.",
       category: "technical",
       defaultSlaHours: 24,
       intensityTriggers: ["standard", "regulated", "enhanced"],
@@ -43,7 +55,10 @@ async function main() {
       category: "security",
       defaultSlaHours: 24,
       intensityTriggers: ["standard", "regulated", "enhanced"],
-      skipConditions: [{ field: "infrastructureChange", op: "eq", value: false }, { field: "thirdPartyChanges", op: "eq", value: false }],
+      skipConditions: [
+        { field: "infrastructureChange", op: "eq", value: false },
+        { field: "thirdPartyChanges", op: "eq", value: false },
+      ],
       requiredEvidence: ["TEST_RESULT", "AUDIT_LOG"],
       approverRoles: ["security"],
       isBuiltIn: true,
@@ -51,7 +66,8 @@ async function main() {
     {
       slug: "rollback-plan",
       name: "Rollback Plan Review",
-      description: "Validated rollback and recovery procedure documented and approved before release.",
+      description:
+        "Validated rollback and recovery procedure documented and approved before release.",
       category: "operational",
       defaultSlaHours: 12,
       intensityTriggers: ["regulated", "enhanced"],
@@ -79,7 +95,13 @@ async function main() {
       category: "privacy",
       defaultSlaHours: 72,
       intensityTriggers: ["regulated", "enhanced"],
-      skipConditions: [{ field: "dataClassification", op: "notIn", value: ["personal", "sensitive", "special-category"] }],
+      skipConditions: [
+        {
+          field: "dataClassification",
+          op: "notIn",
+          value: ["personal", "sensitive", "special-category"],
+        },
+      ],
       requiredEvidence: ["DOCUMENT", "SIGNED_ATTESTATION"],
       approverRoles: ["dpo"],
       isBuiltIn: true,
@@ -99,7 +121,8 @@ async function main() {
     {
       slug: "ai-risk-assessment",
       name: "AI Risk Assessment",
-      description: "EU AI Act Article 9 risk management: bias, drift, explainability, human oversight verification.",
+      description:
+        "EU AI Act Article 9 risk management: bias, drift, explainability, human oversight verification.",
       category: "ai-governance",
       defaultSlaHours: 48,
       intensityTriggers: ["regulated", "enhanced"],
@@ -111,7 +134,8 @@ async function main() {
     {
       slug: "conformity-assessment",
       name: "EU AI Act Conformity Assessment",
-      description: "Full conformity assessment per EU AI Act Annex VI or VII for high-risk AI systems.",
+      description:
+        "Full conformity assessment per EU AI Act Annex VI or VII for high-risk AI systems.",
       category: "regulatory",
       defaultSlaHours: 120,
       intensityTriggers: ["enhanced"],
@@ -123,7 +147,8 @@ async function main() {
     {
       slug: "fundamental-rights",
       name: "Fundamental Rights Assessment",
-      description: "Assessment of impact on fundamental rights for high-risk AI systems per EU AI Act Art. 27.",
+      description:
+        "Assessment of impact on fundamental rights for high-risk AI systems per EU AI Act Art. 27.",
       category: "regulatory",
       defaultSlaHours: 120,
       intensityTriggers: ["enhanced"],
@@ -135,7 +160,8 @@ async function main() {
     {
       slug: "ai-governance-committee",
       name: "AI Governance Committee",
-      description: "Board-level AI Governance Committee sign-off for strategic or high-risk AI deployments.",
+      description:
+        "Board-level AI Governance Committee sign-off for strategic or high-risk AI deployments.",
       category: "ai-governance",
       defaultSlaHours: 168,
       intensityTriggers: ["enhanced"],
@@ -149,7 +175,16 @@ async function main() {
   for (const gate of builtInGates) {
     await prisma.gateDefinition.upsert({
       where: { slug: gate.slug },
-      update: { name: gate.name, description: gate.description, category: gate.category, intensityTriggers: gate.intensityTriggers, skipConditions: gate.skipConditions, requiredEvidence: gate.requiredEvidence, approverRoles: gate.approverRoles, defaultSlaHours: gate.defaultSlaHours },
+      update: {
+        name: gate.name,
+        description: gate.description,
+        category: gate.category,
+        intensityTriggers: gate.intensityTriggers,
+        skipConditions: gate.skipConditions,
+        requiredEvidence: gate.requiredEvidence,
+        approverRoles: gate.approverRoles,
+        defaultSlaHours: gate.defaultSlaHours,
+      },
       create: gate,
     });
   }
@@ -162,7 +197,8 @@ async function main() {
     create: {
       key: "DORA-Q4-25",
       name: "DORA ICT Risk Programme Q4-2025",
-      description: "Enterprise ICT risk governance programme aligned to DORA Article 5–16 and EU AI Act obligations.",
+      description:
+        "Enterprise ICT risk governance programme aligned to DORA Article 5–16 and EU AI Act obligations.",
       domain: "financial-services",
       classification: "confidential",
       ownerEmail: "bakkaiahsf@gmail.com",
@@ -220,7 +256,8 @@ async function main() {
     data: {
       projectId: project.id,
       title: "AI Model Validation — NEXORI-LR",
-      description: "EU AI Act compliance validation for the NEXORI large-reasoning model prior to production deployment.",
+      description:
+        "EU AI Act compliance validation for the NEXORI large-reasoning model prior to production deployment.",
       phase: "ai-deployment",
       status: "active",
       ownedBy: adminUser.email,
@@ -320,7 +357,8 @@ async function main() {
       gateId: gateCAB.id,
       requestedById: adminUser.id,
       status: ApprovalStatus.PENDING,
-      notes: "Change request NX-99201 — Vector Scale Adjustment to core lending engine. Low-risk, tested in UAT.",
+      notes:
+        "Change request NX-99201 — Vector Scale Adjustment to core lending engine. Low-risk, tested in UAT.",
       expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
   });
@@ -330,7 +368,8 @@ async function main() {
       gateId: gateModelDeploy.id,
       requestedById: adminUser.id,
       status: ApprovalStatus.PENDING,
-      notes: "NEXORI-LR model v3.1 — neural weight override applied. Alignment score 99.7%. Requires executive sign-off.",
+      notes:
+        "NEXORI-LR model v3.1 — neural weight override applied. Alignment score 99.7%. Requires executive sign-off.",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
   });
@@ -342,7 +381,8 @@ async function main() {
       {
         projectId: project.id,
         title: "Unauthorized API Egress — Node Cluster VII",
-        description: "Anomalous outbound API calls detected from Node Cluster VII. Source unconfirmed. Possible data exfiltration vector.",
+        description:
+          "Anomalous outbound API calls detected from Node Cluster VII. Source unconfirmed. Possible data exfiltration vector.",
         category: "security",
         severity: RiskSeverity.CRITICAL,
         status: RiskStatus.OPEN,
@@ -353,19 +393,22 @@ async function main() {
       {
         projectId: project.id,
         title: "AI Model Alignment Drift — L-Model-2",
-        description: "Performance deviation observed in localized reasoning unit. Drift exceeds 0.003 threshold. Monitoring active.",
+        description:
+          "Performance deviation observed in localized reasoning unit. Drift exceeds 0.003 threshold. Monitoring active.",
         category: "ai",
         severity: RiskSeverity.HIGH,
         status: RiskStatus.MITIGATING,
         owner: adminUser.email,
-        mitigation: "Increased monitoring frequency. Rollback plan prepared. Human override enabled.",
+        mitigation:
+          "Increased monitoring frequency. Rollback plan prepared. Human override enabled.",
         source: "ai-extracted",
         raisedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
       },
       {
         projectId: project.id,
         title: "Data Locality Certificate Expired",
-        description: "GDPR compliance: AWS Frankfurt module-16 data locality certificate expired. Cross-border transfer risk.",
+        description:
+          "GDPR compliance: AWS Frankfurt module-16 data locality certificate expired. Cross-border transfer risk.",
         category: "regulatory",
         severity: RiskSeverity.HIGH,
         status: RiskStatus.OPEN,
@@ -376,7 +419,8 @@ async function main() {
       {
         projectId: project.id,
         title: "Key Rotation Schedule Overdue",
-        description: "Encryption key rotation for production secrets overdue by 12 days. ISO 27001 A.10.1.2 non-compliance.",
+        description:
+          "Encryption key rotation for production secrets overdue by 12 days. ISO 27001 A.10.1.2 non-compliance.",
         category: "operational",
         severity: RiskSeverity.MEDIUM,
         status: RiskStatus.OPEN,
@@ -419,7 +463,8 @@ async function main() {
       caseId: caseAI.id,
       type: EvidenceType.AUDIT_LOG,
       title: "AI Training Data Audit — NEXORI-LR",
-      description: "Complete audit of training data provenance, bias analysis, and data quality metrics.",
+      description:
+        "Complete audit of training data provenance, bias analysis, and data quality metrics.",
       submittedBy: adminUser.email,
       hash: "sha256:b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5",
       externalRef: "AI-AUDIT-2025-Q4-002",
@@ -443,7 +488,8 @@ async function main() {
       projectId: project.id,
       type: EvidenceType.DOCUMENT,
       title: "Encryption Configuration Review",
-      description: "AES-256-GCM implementation review across all data stores. In-transit TLS 1.3 verified.",
+      description:
+        "AES-256-GCM implementation review across all data stores. In-transit TLS 1.3 verified.",
       submittedBy: adminUser.email,
       hash: "sha256:d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
     },
@@ -454,14 +500,70 @@ async function main() {
   // ── RegulatoryMappings ────────────────────────────────────────────────────
   await prisma.regulatoryMapping.createMany({
     data: [
-      { projectId: project.id, evidenceId: ev1.id, framework: RegulatoryFramework.DORA, controlId: "DORA-Art-9", controlName: "ICT security policies", mappedBy: adminUser.email },
-      { projectId: project.id, evidenceId: ev1.id, framework: RegulatoryFramework.ISO_27001, controlId: "ISO-A.12.6.1", controlName: "Management of technical vulnerabilities", mappedBy: adminUser.email },
-      { projectId: project.id, evidenceId: ev2.id, framework: RegulatoryFramework.EU_AI_ACT, controlId: "AIA-Art-9", controlName: "Risk management system", mappedBy: adminUser.email },
-      { projectId: project.id, evidenceId: ev2.id, framework: RegulatoryFramework.EU_AI_ACT, controlId: "AIA-Art-10", controlName: "Data and data governance", mappedBy: adminUser.email },
-      { projectId: project.id, evidenceId: ev3.id, framework: RegulatoryFramework.DORA, controlId: "DORA-Art-28", controlName: "Third-party ICT risk management", mappedBy: adminUser.email },
-      { projectId: project.id, evidenceId: ev3.id, framework: RegulatoryFramework.GDPR, controlId: "GDPR-Art-44", controlName: "Cross-border data transfer", mappedBy: approverUser.email },
-      { projectId: project.id, evidenceId: ev4.id, framework: RegulatoryFramework.ISO_27001, controlId: "ISO-A.10.1.1", controlName: "Encryption policy", mappedBy: adminUser.email },
-      { projectId: project.id, evidenceId: ev4.id, framework: RegulatoryFramework.PCI_DSS, controlId: "PCI-Req-3.5", controlName: "Protect stored cardholder data", mappedBy: adminUser.email },
+      {
+        projectId: project.id,
+        evidenceId: ev1.id,
+        framework: RegulatoryFramework.DORA,
+        controlId: "DORA-Art-9",
+        controlName: "ICT security policies",
+        mappedBy: adminUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev1.id,
+        framework: RegulatoryFramework.ISO_27001,
+        controlId: "ISO-A.12.6.1",
+        controlName: "Management of technical vulnerabilities",
+        mappedBy: adminUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev2.id,
+        framework: RegulatoryFramework.EU_AI_ACT,
+        controlId: "AIA-Art-9",
+        controlName: "Risk management system",
+        mappedBy: adminUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev2.id,
+        framework: RegulatoryFramework.EU_AI_ACT,
+        controlId: "AIA-Art-10",
+        controlName: "Data and data governance",
+        mappedBy: adminUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev3.id,
+        framework: RegulatoryFramework.DORA,
+        controlId: "DORA-Art-28",
+        controlName: "Third-party ICT risk management",
+        mappedBy: adminUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev3.id,
+        framework: RegulatoryFramework.GDPR,
+        controlId: "GDPR-Art-44",
+        controlName: "Cross-border data transfer",
+        mappedBy: approverUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev4.id,
+        framework: RegulatoryFramework.ISO_27001,
+        controlId: "ISO-A.10.1.1",
+        controlName: "Encryption policy",
+        mappedBy: adminUser.email,
+      },
+      {
+        projectId: project.id,
+        evidenceId: ev4.id,
+        framework: RegulatoryFramework.PCI_DSS,
+        controlId: "PCI-Req-3.5",
+        controlName: "Protect stored cardholder data",
+        mappedBy: adminUser.email,
+      },
     ],
   });
   console.log("  ✓ RegulatoryMappings: 8");
@@ -525,20 +627,118 @@ async function main() {
   const eventBase = { projectId: project.id, actorId: adminUser.id, actorEmail: adminUser.email };
   await prisma.governanceEvent.createMany({
     data: [
-      { ...eventBase, type: GovernanceEventType.PROJECT_CREATED, resourceType: "project", resourceId: project.id, payload: { name: project.name }, timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.THIRD_PARTY_REGISTERED, resourceType: "third-party", payload: { vendor: "OpenAI", criticality: "critical" }, timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.THIRD_PARTY_REGISTERED, resourceType: "third-party", payload: { vendor: "Anthropic", criticality: "critical" }, timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.GATE_APPROVED, resourceType: "gate", resourceId: gateDORAReview.id, payload: { gateName: "DORA Third-Party Review", caseTitle: caseTP.title }, timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.GATE_APPROVED, resourceType: "gate", resourceId: gateAIRisk.id, payload: { gateName: "AI Risk Assessment Checkpoint", caseTitle: caseAI.title }, timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.EVIDENCE_SUBMITTED, resourceType: "evidence", resourceId: ev2.id, payload: { title: ev2.title, type: "AUDIT_LOG" }, timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.GATE_APPROVED, resourceType: "gate", resourceId: gateSecuritySignoff.id, payload: { gateName: "Security Sign-off", caseTitle: caseChange.title }, timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.EVIDENCE_SUBMITTED, resourceType: "evidence", resourceId: ev1.id, payload: { title: ev1.title, type: "TEST_RESULT" }, timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.REGULATORY_MAPPING_ADDED, resourceType: "mapping", payload: { framework: "DORA", controlId: "DORA-Art-9", evidenceTitle: ev1.title }, timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.RISK_RAISED, resourceType: "risk", payload: { title: "Data Locality Certificate Expired", severity: "HIGH" }, timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.APPROVAL_REQUESTED, resourceType: "approval", resourceId: approvalCAB.id, payload: { gateName: "CAB Approval", notes: "Change request NX-99201" }, timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.APPROVAL_REQUESTED, resourceType: "approval", resourceId: approvalModelDeploy.id, payload: { gateName: "Model Deployment Approval", notes: "NEXORI-LR v3.1" }, timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.RISK_RAISED, resourceType: "risk", payload: { title: "Unauthorized API Egress — Node Cluster VII", severity: "CRITICAL" }, timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-      { ...eventBase, type: GovernanceEventType.AI_INVOCATION, resourceType: "ai", payload: { model: "gpt-4o-mini", action: "governance-assist", outcome: "success", tokensIn: 63, tokensOut: 38 }, timestamp: new Date(Date.now() - 60 * 60 * 1000) },
+      {
+        ...eventBase,
+        type: GovernanceEventType.PROJECT_CREATED,
+        resourceType: "project",
+        resourceId: project.id,
+        payload: { name: project.name },
+        timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.THIRD_PARTY_REGISTERED,
+        resourceType: "third-party",
+        payload: { vendor: "OpenAI", criticality: "critical" },
+        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.THIRD_PARTY_REGISTERED,
+        resourceType: "third-party",
+        payload: { vendor: "Anthropic", criticality: "critical" },
+        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.GATE_APPROVED,
+        resourceType: "gate",
+        resourceId: gateDORAReview.id,
+        payload: { gateName: "DORA Third-Party Review", caseTitle: caseTP.title },
+        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.GATE_APPROVED,
+        resourceType: "gate",
+        resourceId: gateAIRisk.id,
+        payload: { gateName: "AI Risk Assessment Checkpoint", caseTitle: caseAI.title },
+        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.EVIDENCE_SUBMITTED,
+        resourceType: "evidence",
+        resourceId: ev2.id,
+        payload: { title: ev2.title, type: "AUDIT_LOG" },
+        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.GATE_APPROVED,
+        resourceType: "gate",
+        resourceId: gateSecuritySignoff.id,
+        payload: { gateName: "Security Sign-off", caseTitle: caseChange.title },
+        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.EVIDENCE_SUBMITTED,
+        resourceType: "evidence",
+        resourceId: ev1.id,
+        payload: { title: ev1.title, type: "TEST_RESULT" },
+        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.REGULATORY_MAPPING_ADDED,
+        resourceType: "mapping",
+        payload: { framework: "DORA", controlId: "DORA-Art-9", evidenceTitle: ev1.title },
+        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.RISK_RAISED,
+        resourceType: "risk",
+        payload: { title: "Data Locality Certificate Expired", severity: "HIGH" },
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.APPROVAL_REQUESTED,
+        resourceType: "approval",
+        resourceId: approvalCAB.id,
+        payload: { gateName: "CAB Approval", notes: "Change request NX-99201" },
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.APPROVAL_REQUESTED,
+        resourceType: "approval",
+        resourceId: approvalModelDeploy.id,
+        payload: { gateName: "Model Deployment Approval", notes: "NEXORI-LR v3.1" },
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.RISK_RAISED,
+        resourceType: "risk",
+        payload: { title: "Unauthorized API Egress — Node Cluster VII", severity: "CRITICAL" },
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      },
+      {
+        ...eventBase,
+        type: GovernanceEventType.AI_INVOCATION,
+        resourceType: "ai",
+        payload: {
+          model: "gpt-4o-mini",
+          action: "governance-assist",
+          outcome: "success",
+          tokensIn: 63,
+          tokensOut: 38,
+        },
+        timestamp: new Date(Date.now() - 60 * 60 * 1000),
+      },
     ],
   });
   console.log("  ✓ GovernanceEvents: 14 (flight recorder seeded)");
@@ -548,5 +748,8 @@ async function main() {
 }
 
 main()
-  .catch((e) => { console.error("Seed failed:", e); process.exit(1); })
+  .catch((e) => {
+    console.error("Seed failed:", e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

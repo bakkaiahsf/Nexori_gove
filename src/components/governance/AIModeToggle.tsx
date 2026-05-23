@@ -5,9 +5,21 @@ import { useRouter } from "next/navigation";
 import { AIControlMode } from "@prisma/client";
 
 const MODES: { id: AIControlMode; label: string; desc: string }[] = [
-  { id: AIControlMode.AI_ASSIST, label: "AI Assist", desc: "AI surfaces suggestions. Human decides." },
-  { id: AIControlMode.AI_REVIEW, label: "AI Review", desc: "AI reviews and flags risk. Human approves." },
-  { id: AIControlMode.AI_CONTROLLED_ACTION, label: "AI Controlled", desc: "AI acts within policy bounds. Fully logged." },
+  {
+    id: AIControlMode.AI_ASSIST,
+    label: "AI Assist",
+    desc: "AI surfaces suggestions. Human decides.",
+  },
+  {
+    id: AIControlMode.AI_REVIEW,
+    label: "AI Review",
+    desc: "AI reviews and flags risk. Human approves.",
+  },
+  {
+    id: AIControlMode.AI_CONTROLLED_ACTION,
+    label: "AI Controlled",
+    desc: "AI acts within policy bounds. Fully logged.",
+  },
   { id: AIControlMode.HUMAN_ONLY, label: "Human Only", desc: "AI disabled. All workflows manual." },
 ];
 

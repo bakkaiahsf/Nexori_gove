@@ -43,7 +43,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       category: data.category,
       defaultSlaHours: data.defaultSlaHours,
       intensityTriggers: data.intensityTriggers,
-      skipConditions: data.skipConditions ? (data.skipConditions as unknown as Prisma.InputJsonValue) : undefined,
+      skipConditions: data.skipConditions
+        ? (data.skipConditions as unknown as Prisma.InputJsonValue)
+        : undefined,
       requiredEvidence: data.requiredEvidence ?? [],
       approverRoles: data.approverRoles,
       tenantId: data.tenantId,

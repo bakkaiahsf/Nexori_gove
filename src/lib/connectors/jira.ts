@@ -8,7 +8,7 @@ export interface JiraCredentials {
 }
 
 export interface JiraFieldMapping {
-  regulatoryDomain?: string;     // custom field ID → regulatoryDomain
+  regulatoryDomain?: string; // custom field ID → regulatoryDomain
   jurisdiction?: string;
   dataClassification?: string;
   aiSystem?: string;
@@ -35,9 +35,9 @@ export class JiraConnector implements SourceConnector {
   ) {}
 
   private authHeader(): string {
-    const token = Buffer.from(
-      `${this.credentials.email}:${this.credentials.apiToken}`
-    ).toString("base64");
+    const token = Buffer.from(`${this.credentials.email}:${this.credentials.apiToken}`).toString(
+      "base64"
+    );
     return `Basic ${token}`;
   }
 
@@ -73,17 +73,27 @@ export class JiraConnector implements SourceConnector {
       const raw = fields[fieldId];
       if (raw == null) continue;
 
-      const value = typeof raw === "object" && raw !== null && "value" in raw
-        ? String((raw as { value: unknown }).value)
-        : String(raw);
+      const value =
+        typeof raw === "object" && raw !== null && "value" in raw
+          ? String((raw as { value: unknown }).value)
+          : String(raw);
 
       switch (signal) {
-        case "regulatoryDomain":   signals.regulatoryDomain = value; break;
-        case "jurisdiction":       signals.jurisdiction = value; break;
-        case "dataClassification": signals.dataClassification = value; break;
-        case "environment":        signals.environment = value; break;
+        case "regulatoryDomain":
+          signals.regulatoryDomain = value;
+          break;
+        case "jurisdiction":
+          signals.jurisdiction = value;
+          break;
+        case "dataClassification":
+          signals.dataClassification = value;
+          break;
+        case "environment":
+          signals.environment = value;
+          break;
         case "aiSystem":
-          signals.aiSystemInvolved = value.toLowerCase() !== "false" && value !== "0" && value !== "none";
+          signals.aiSystemInvolved =
+            value.toLowerCase() !== "false" && value !== "0" && value !== "none";
           break;
       }
     }
@@ -91,17 +101,19 @@ export class JiraConnector implements SourceConnector {
     // Infer from labels
     const labels: string[] = Array.isArray((issue as Record<string, unknown>).labels)
       ? ((issue as Record<string, unknown>).labels as string[])
-      : (fields.labels as string[]) ?? [];
+      : ((fields.labels as string[]) ?? []);
 
     const labelStr = labels.join(" ").toLowerCase();
     if (!("thirdPartyChanges" in signals)) {
       signals.thirdPartyChanges = labelStr.includes("third-party") || labelStr.includes("vendor");
     }
     if (!("infrastructureChange" in signals)) {
-      signals.infrastructureChange = labelStr.includes("infra") || labelStr.includes("infrastructure");
+      signals.infrastructureChange =
+        labelStr.includes("infra") || labelStr.includes("infrastructure");
     }
     if (!("aiSystemInvolved" in signals)) {
-      signals.aiSystemInvolved = labelStr.includes("ai") || labelStr.includes("ml") || labelStr.includes("model");
+      signals.aiSystemInvolved =
+        labelStr.includes("ai") || labelStr.includes("ml") || labelStr.includes("model");
     }
 
     return signals;
@@ -265,12 +277,8 @@ export class JiraConnector implements SourceConnector {
 
   async updateIssueStatus(key: string, status: string): Promise<void> {
     type TransitionList = { transitions: Array<{ id: string; name: string }> };
-    const { transitions } = await this.jiraFetch<TransitionList>(
-      `/issue/${key}/transitions`
-    );
-    const match = transitions.find(
-      (t) => t.name.toLowerCase() === status.toLowerCase()
-    );
+    const { transitions } = await this.jiraFetch<TransitionList>(`/issue/${key}/transitions`);
+    const match = transitions.find((t) => t.name.toLowerCase() === status.toLowerCase());
     if (!match) return; // Status transition not available — skip silently
     await this.jiraFetch(`/issue/${key}/transitions`, {
       method: "POST",
@@ -297,10 +305,13 @@ export class JiraConnector implements SourceConnector {
     if (!res.ok) return "";
 
     type ConfluencePage = { body?: { storage?: { value?: string } } };
-    const page = await res.json() as ConfluencePage;
+    const page = (await res.json()) as ConfluencePage;
     const html = page.body?.storage?.value ?? "";
     // Strip HTML tags for plain-text RAG ingestion
-    return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    return html
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 }
 
@@ -313,10 +324,7 @@ export function verifyJiraWebhookSignature(
   signatureHeader: string,
   secret: string
 ): boolean {
-  const expected = `sha256=${crypto
-    .createHmac("sha256", secret)
-    .update(rawBody)
-    .digest("hex")}`;
+  const expected = `sha256=${crypto.createHmac("sha256", secret).update(rawBody).digest("hex")}`;
   try {
     return crypto.timingSafeEqual(Buffer.from(signatureHeader), Buffer.from(expected));
   } catch {

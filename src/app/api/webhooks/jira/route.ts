@@ -20,7 +20,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Verify HMAC signature
   const connector = await prisma.sourceConnector.findUnique({ where: { id: connectorId } });
   if (!connector?.webhookSecret) {
-    return NextResponse.json({ error: "Connector not found or no webhook secret" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Connector not found or no webhook secret" },
+      { status: 404 }
+    );
   }
 
   if (
@@ -74,7 +77,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       labels: epicData.labels,
       components: epicData.components,
       customFields: epicData.customFields as unknown as Prisma.InputJsonValue,
-      timeline: epicData.timeline ? (epicData.timeline as unknown as Prisma.InputJsonValue) : undefined,
+      timeline: epicData.timeline
+        ? (epicData.timeline as unknown as Prisma.InputJsonValue)
+        : undefined,
       snapshotAt: new Date(),
     },
     create: {
@@ -87,7 +92,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       labels: epicData.labels,
       components: epicData.components,
       customFields: epicData.customFields as unknown as Prisma.InputJsonValue,
-      timeline: epicData.timeline ? (epicData.timeline as unknown as Prisma.InputJsonValue) : undefined,
+      timeline: epicData.timeline
+        ? (epicData.timeline as unknown as Prisma.InputJsonValue)
+        : undefined,
     },
   });
 
@@ -144,7 +151,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await prisma.governanceRiskScore.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
     await prisma.governanceContext.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
     project.id,
-    { regulatoryFrameworks: epicData.regulatoryDomain ? [epicData.regulatoryDomain] : [], jurisdiction: epicData.jurisdiction ?? "GLOBAL" }
+    {
+      regulatoryFrameworks: epicData.regulatoryDomain ? [epicData.regulatoryDomain] : [],
+      jurisdiction: epicData.jurisdiction ?? "GLOBAL",
+    }
   );
 
   // Write governance back to Jira (fire-and-forget)

@@ -96,17 +96,25 @@ export type ExpertProfileCreate = z.infer<typeof ExpertProfileCreateSchema>;
 
 // ── Gate definition schemas ───────────────────────────────────────────────────
 export const GateDefinitionCreateSchema = z.object({
-  slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/),
+  slug: z
+    .string()
+    .min(1)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/),
   name: z.string().min(1).max(100),
   description: z.string().optional(),
   category: z.string().min(1),
   defaultSlaHours: z.number().int().min(1).max(720),
   intensityTriggers: z.array(z.enum(["minimal", "standard", "regulated", "enhanced"])).min(1),
-  skipConditions: z.array(z.object({
-    field: z.string(),
-    op: z.enum(["eq", "neq", "lt", "gt", "notContains", "notIn"]),
-    value: z.unknown(),
-  })).optional(),
+  skipConditions: z
+    .array(
+      z.object({
+        field: z.string(),
+        op: z.enum(["eq", "neq", "lt", "gt", "notContains", "notIn"]),
+        value: z.unknown(),
+      })
+    )
+    .optional(),
   requiredEvidence: z.array(z.string()).optional(),
   approverRoles: z.array(z.string()).min(1),
   tenantId: z.string().optional(),

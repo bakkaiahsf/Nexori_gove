@@ -20,17 +20,17 @@ import {
 
 // ── Weights — must sum to 100 ─────────────────────────────────────────────────
 const WEIGHTS = {
-  regulatoryExp:    20,
+  regulatoryExp: 20,
   productionImpact: 15,
-  aiInvolvement:    15,
-  customerImpact:   10,
-  dataExposure:     10,
-  blastRadius:       8,
-  securitySens:      8,
-  deploymentCrit:    5,
-  infraImpact:       4,
-  thirdPartyRisk:    3,
-  incidentHistory:   2,
+  aiInvolvement: 15,
+  customerImpact: 10,
+  dataExposure: 10,
+  blastRadius: 8,
+  securitySens: 8,
+  deploymentCrit: 5,
+  infraImpact: 4,
+  thirdPartyRisk: 3,
+  incidentHistory: 2,
 } as const;
 
 // ── Intensity thresholds ──────────────────────────────────────────────────────
@@ -45,10 +45,14 @@ export function compositeToIntensity(score: number): IntensityLevel {
 
 export function intensityToAIMode(intensity: IntensityLevel): string {
   switch (intensity) {
-    case "minimal":   return "AI_ASSIST";
-    case "standard":  return "AI_ASSIST";
-    case "regulated": return "AI_REVIEW";
-    case "enhanced":  return "AI_GOVERNED";
+    case "minimal":
+      return "AI_ASSIST";
+    case "standard":
+      return "AI_ASSIST";
+    case "regulated":
+      return "AI_REVIEW";
+    case "enhanced":
+      return "AI_GOVERNED";
   }
 }
 
@@ -90,17 +94,17 @@ export async function scoreGovernanceCase(
 
   // Score all 11 dimensions
   const dims = {
-    regulatoryExp:    scoreRegulatoryExposure(input),
+    regulatoryExp: scoreRegulatoryExposure(input),
     productionImpact: scoreProductionImpact(input),
-    aiInvolvement:    scoreAIInvolvement(input),
-    customerImpact:   scoreCustomerImpact(input),
-    dataExposure:     scoreDataExposure(input),
-    blastRadius:      scoreBlastRadius(input),
-    securitySens:     scoreSecuritySensitivity(input),
-    deploymentCrit:   scoreDeploymentCriticality(input),
-    infraImpact:      scoreInfrastructureImpact(input),
-    thirdPartyRisk:   scoreThirdPartyRisk(input),
-    incidentHistory:  scoreIncidentHistory(input),
+    aiInvolvement: scoreAIInvolvement(input),
+    customerImpact: scoreCustomerImpact(input),
+    dataExposure: scoreDataExposure(input),
+    blastRadius: scoreBlastRadius(input),
+    securitySens: scoreSecuritySensitivity(input),
+    deploymentCrit: scoreDeploymentCriticality(input),
+    infraImpact: scoreInfrastructureImpact(input),
+    thirdPartyRisk: scoreThirdPartyRisk(input),
+    incidentHistory: scoreIncidentHistory(input),
   };
 
   // Weighted composite (0–100)

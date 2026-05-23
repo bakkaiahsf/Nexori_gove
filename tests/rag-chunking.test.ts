@@ -78,9 +78,9 @@ describe("chunkText", () => {
 
   it("consecutive chunks share overlap content", () => {
     const sentence = "Regulatory requirement number {n}. ";
-    const long = Array.from({ length: 60 }, (_, i) =>
-      sentence.replace("{n}", String(i + 1))
-    ).join("");
+    const long = Array.from({ length: 60 }, (_, i) => sentence.replace("{n}", String(i + 1))).join(
+      ""
+    );
     const chunks = chunkText(long);
     if (chunks.length > 1) {
       // The last sentence of chunk[0] should appear at the start of chunk[1]

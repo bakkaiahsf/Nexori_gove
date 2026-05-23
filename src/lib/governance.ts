@@ -27,14 +27,22 @@ export function computeHealthScore(
 // ── Summary ───────────────────────────────────────────────────────────────────
 export async function getProjectSummary(projectId: string) {
   const [
-    totalGates, approvedGates, pendingApprovals,
-    totalRisks, criticalRisks, openRisks,
-    activeCases, totalEvidence, evidenceMapped,
+    totalGates,
+    approvedGates,
+    pendingApprovals,
+    totalRisks,
+    criticalRisks,
+    openRisks,
+    activeCases,
+    totalEvidence,
+    evidenceMapped,
     aiMode,
   ] = await Promise.all([
     prisma.governanceGate.count({ where: { case: { projectId } } }),
     prisma.governanceGate.count({ where: { case: { projectId }, status: GateStatus.APPROVED } }),
-    prisma.approvalRequest.count({ where: { status: ApprovalStatus.PENDING, gate: { case: { projectId } } } }),
+    prisma.approvalRequest.count({
+      where: { status: ApprovalStatus.PENDING, gate: { case: { projectId } } },
+    }),
     prisma.riskItem.count({ where: { projectId } }),
     prisma.riskItem.count({ where: { projectId, severity: "CRITICAL", status: "OPEN" } }),
     prisma.riskItem.count({ where: { projectId, status: { in: ["OPEN", "MITIGATING"] } } }),
@@ -44,7 +52,14 @@ export async function getProjectSummary(projectId: string) {
     prisma.aIControlSetting.findUnique({ where: { projectId }, select: { mode: true } }),
   ]);
 
-  const healthScore = computeHealthScore(approvedGates, totalGates, criticalRisks, totalRisks, evidenceMapped, totalEvidence);
+  const healthScore = computeHealthScore(
+    approvedGates,
+    totalGates,
+    criticalRisks,
+    totalRisks,
+    evidenceMapped,
+    totalEvidence
+  );
 
   return {
     healthScore,
@@ -150,9 +165,10 @@ export async function setAIControlMode(
     await tx.governanceEvent.create({
       data: {
         projectId,
-        type: mode === AIControlMode.EMERGENCY_LOCK
-          ? GovernanceEventType.AI_EMERGENCY_LOCK
-          : GovernanceEventType.AI_MODE_CHANGED,
+        type:
+          mode === AIControlMode.EMERGENCY_LOCK
+            ? GovernanceEventType.AI_EMERGENCY_LOCK
+            : GovernanceEventType.AI_MODE_CHANGED,
         actorEmail: setBy,
         resourceType: "ai-control-setting",
         resourceId: setting.id,
@@ -235,11 +251,7 @@ export async function approveRequest(
 }
 
 // ── Reject gate (P0 fix — was missing) ───────────────────────────────────────
-export async function rejectRequest(
-  approvalId: string,
-  resolvedByEmail: string,
-  reason: string
-) {
+export async function rejectRequest(approvalId: string, resolvedByEmail: string, reason: string) {
   const approval = await prisma.approvalRequest.findUniqueOrThrow({
     where: { id: approvalId },
     include: { gate: { include: { case: { select: { projectId: true } } } } },
@@ -280,11 +292,7 @@ export async function rejectRequest(
 }
 
 // ── Skip gate (adaptive pipeline — skip with documented reason) ──────────────
-export async function skipGate(
-  gateId: string,
-  reason: string,
-  actorEmail: string
-) {
+export async function skipGate(gateId: string, reason: string, actorEmail: string) {
   const gate = await prisma.governanceGate.findUniqueOrThrow({
     where: { id: gateId },
     include: { case: { select: { projectId: true } } },

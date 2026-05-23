@@ -3,7 +3,7 @@ import { GateStatus } from "@prisma/client";
 import type { GovernanceContext, GovernanceRiskScore } from "@prisma/client";
 
 const INHERITANCE_WINDOW_DAYS = 30;
-const MAX_RISK_SCORE_INCREASE = 0.20;
+const MAX_RISK_SCORE_INCREASE = 0.2;
 
 export interface InheritableApproval {
   gateSlug: string;
@@ -24,9 +24,7 @@ export async function findInheritableApproval(
   context: GovernanceContext,
   currentRiskScore: GovernanceRiskScore
 ): Promise<InheritableApproval | null> {
-  const windowStart = new Date(
-    Date.now() - INHERITANCE_WINDOW_DAYS * 24 * 60 * 60 * 1000
-  );
+  const windowStart = new Date(Date.now() - INHERITANCE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
   // Find recently approved gates with the same slug across cases in this project
   const priorGates = await prisma.governanceGate.findMany({

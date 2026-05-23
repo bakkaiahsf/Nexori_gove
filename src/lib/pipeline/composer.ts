@@ -28,12 +28,12 @@ function evaluateSkipConditions(
   if (!Array.isArray(conditions)) return null;
 
   const contextMap: Record<string, unknown> = {
-    environment:         context.environment,
-    dataClassification:  context.dataClassification,
-    aiSystemInvolved:    context.aiSystemInvolved,
-    thirdPartyChanges:   context.thirdPartyChanges,
+    environment: context.environment,
+    dataClassification: context.dataClassification,
+    aiSystemInvolved: context.aiSystemInvolved,
+    thirdPartyChanges: context.thirdPartyChanges,
     infrastructureChange: context.infrastructureChange,
-    regulatoryScope:     regulatoryFrameworks,
+    regulatoryScope: regulatoryFrameworks,
   };
 
   for (const cond of conditions) {
@@ -59,9 +59,7 @@ function evaluateSkipConditions(
           : typeof actual === "string" && !actual.includes(String(cond.value));
         break;
       case "notIn":
-        matched = Array.isArray(cond.value)
-          ? !(cond.value as unknown[]).includes(actual)
-          : true;
+        matched = Array.isArray(cond.value) ? !(cond.value as unknown[]).includes(actual) : true;
         break;
     }
 
@@ -127,12 +125,7 @@ export async function composeAdaptivePipeline(
     }
 
     // 3. Check inheritance
-    const inherited = await findInheritableApproval(
-      gateDef.slug,
-      projectId,
-      context,
-      riskScore
-    );
+    const inherited = await findInheritableApproval(gateDef.slug, projectId, context, riskScore);
 
     if (inherited) {
       // Create gate record pre-approved (inherited)

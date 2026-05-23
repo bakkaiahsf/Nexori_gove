@@ -19,11 +19,15 @@ export default function StatusBarClient({ version = "v0.1.0-MVP" }: { version?: 
           <span>SYSTEM_ACTIVE</span>
         </div>
         <div className="flex items-center gap-xs">
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>database</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+            database
+          </span>
           <span>DB_CLUSTER_READY: 0.002ms</span>
         </div>
         <div className="flex items-center gap-xs">
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>shield</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+            shield
+          </span>
           <span>ENCRYPTION: AES-256-GCM</span>
         </div>
       </div>

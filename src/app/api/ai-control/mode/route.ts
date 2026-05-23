@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
 
   const parsed = ModeUpdateSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Validation failed", issues: parsed.error.issues }, { status: 400 });
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.issues },
+      { status: 400 }
+    );
   }
 
   const { mode, setBy, reason } = parsed.data;
