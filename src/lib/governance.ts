@@ -167,9 +167,9 @@ export async function setAIControlMode(
 export async function approveRequest(
   approvalId: string,
   resolvedByEmail: string,
-  notes?: string
+  notes?: string,
+  opts: { triggerJiraSync?: boolean } = {}
 ) {
-  // Fetch approval + gate + resolver
   const approval = await prisma.approvalRequest.findUniqueOrThrow({
     where: { id: approvalId },
     include: { gate: { include: { case: { select: { projectId: true } } } } },
@@ -177,8 +177,7 @@ export async function approveRequest(
 
   const resolver = await prisma.user.findUnique({ where: { email: resolvedByEmail } });
 
-  return prisma.$transaction(async (tx) => {
-    // Mark approval as approved
+  const result = await prisma.$transaction(async (tx) => {
     await tx.approvalRequest.update({
       where: { id: approvalId },
       data: {
@@ -189,7 +188,6 @@ export async function approveRequest(
       },
     });
 
-    // Check if all approvals for this gate are done
     const pendingCount = await tx.approvalRequest.count({
       where: { gateId: approval.gateId, status: ApprovalStatus.PENDING },
     });
@@ -200,7 +198,6 @@ export async function approveRequest(
       });
     }
 
-    // Emit immutable GovernanceEvent
     await tx.governanceEvent.create({
       data: {
         projectId: approval.gate.case.projectId,
@@ -210,6 +207,151 @@ export async function approveRequest(
         resourceType: "approval",
         resourceId: approvalId,
         payload: { gateName: approval.gate.name, notes },
+      },
+    });
+
+    return { success: true, gateId: approval.gateId };
+  });
+
+  // Jira sync is fire-and-forget — failure must not block governance
+  if (opts.triggerJiraSync) {
+    try {
+      const gate = await prisma.governanceGate.findUnique({
+        where: { id: result.gateId },
+        select: { sourceStoryKey: true, case: { select: { sourceConnectorId: true } } },
+      });
+      if (gate?.sourceStoryKey && gate.case.sourceConnectorId) {
+        const { buildJiraConnector } = await import("@/lib/connectors/jira");
+        const { syncGateApprovalToJira } = await import("@/lib/connectors/jira-writeback");
+        const connector = await buildJiraConnector(gate.case.sourceConnectorId);
+        await syncGateApprovalToJira(result.gateId, connector, resolvedByEmail);
+      }
+    } catch {
+      // Jira sync failure is non-fatal
+    }
+  }
+
+  return result;
+}
+
+// ── Reject gate (P0 fix — was missing) ───────────────────────────────────────
+export async function rejectRequest(
+  approvalId: string,
+  resolvedByEmail: string,
+  reason: string
+) {
+  const approval = await prisma.approvalRequest.findUniqueOrThrow({
+    where: { id: approvalId },
+    include: { gate: { include: { case: { select: { projectId: true } } } } },
+  });
+
+  const resolver = await prisma.user.findUnique({ where: { email: resolvedByEmail } });
+
+  return prisma.$transaction(async (tx) => {
+    await tx.approvalRequest.update({
+      where: { id: approvalId },
+      data: {
+        status: ApprovalStatus.REJECTED,
+        resolvedById: resolver?.id,
+        resolvedAt: new Date(),
+        notes: reason,
+      },
+    });
+
+    await tx.governanceGate.update({
+      where: { id: approval.gateId },
+      data: { status: GateStatus.REJECTED, rejectedAt: new Date(), rejectedBy: resolvedByEmail },
+    });
+
+    await tx.governanceEvent.create({
+      data: {
+        projectId: approval.gate.case.projectId,
+        type: GovernanceEventType.APPROVAL_REJECTED,
+        actorEmail: resolvedByEmail,
+        actorId: resolver?.id,
+        resourceType: "approval",
+        resourceId: approvalId,
+        payload: { gateName: approval.gate.name, reason },
+      },
+    });
+
+    return { success: true };
+  });
+}
+
+// ── Skip gate (adaptive pipeline — skip with documented reason) ──────────────
+export async function skipGate(
+  gateId: string,
+  reason: string,
+  actorEmail: string
+) {
+  const gate = await prisma.governanceGate.findUniqueOrThrow({
+    where: { id: gateId },
+    include: { case: { select: { projectId: true } } },
+  });
+
+  return prisma.$transaction(async (tx) => {
+    await tx.governanceGate.update({
+      where: { id: gateId },
+      data: { skipped: true, skipReason: reason },
+    });
+
+    await tx.governanceEvent.create({
+      data: {
+        projectId: gate.case.projectId,
+        type: GovernanceEventType.GATE_SKIPPED,
+        actorEmail,
+        resourceType: "governance-gate",
+        resourceId: gateId,
+        payload: { gateName: gate.name, reason },
+      },
+    });
+
+    return { success: true };
+  });
+}
+
+// ── Inherit gate approval from a prior case ───────────────────────────────────
+export async function inheritGateApproval(
+  gateId: string,
+  fromCaseId: string,
+  rationale: string,
+  actorEmail: string
+) {
+  const gate = await prisma.governanceGate.findUniqueOrThrow({
+    where: { id: gateId },
+    include: { case: { select: { projectId: true } } },
+  });
+
+  const priorCase = await prisma.governanceCase.findUniqueOrThrow({
+    where: { id: fromCaseId },
+    select: { title: true },
+  });
+
+  return prisma.$transaction(async (tx) => {
+    await tx.governanceGate.update({
+      where: { id: gateId },
+      data: {
+        status: GateStatus.APPROVED,
+        approvedAt: new Date(),
+        approvedBy: actorEmail,
+        inheritedFrom: fromCaseId,
+      },
+    });
+
+    await tx.governanceEvent.create({
+      data: {
+        projectId: gate.case.projectId,
+        type: GovernanceEventType.APPROVAL_INHERITED,
+        actorEmail,
+        resourceType: "governance-gate",
+        resourceId: gateId,
+        payload: {
+          gateName: gate.name,
+          fromCaseId,
+          fromCaseTitle: priorCase.title,
+          rationale,
+        },
       },
     });
 
