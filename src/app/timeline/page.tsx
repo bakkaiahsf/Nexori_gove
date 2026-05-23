@@ -21,6 +21,14 @@ const EVENT_BADGE: Record<GovernanceEventType, { label: string; cls: string; dot
   RISK_MITIGATED:           { label: "MITIGATED", cls: "bg-primary/20 text-primary border border-primary",    dot: "bg-primary border-primary" },
   REGULATORY_MAPPING_ADDED: { label: "REG MAP",   cls: "bg-primary/20 text-primary border border-primary",    dot: "bg-primary border-primary" },
   THIRD_PARTY_REGISTERED:   { label: "3RD PARTY", cls: "bg-primary/20 text-primary border border-primary",    dot: "bg-primary border-primary" },
+  CONTEXT_ENRICHED:         { label: "CONTEXT",   cls: "bg-primary/10 text-primary border border-primary",    dot: "bg-primary border-primary" },
+  RISK_SCORED:              { label: "SCORED",    cls: "bg-tertiary/20 text-tertiary border border-tertiary", dot: "bg-tertiary border-tertiary" },
+  PIPELINE_ADAPTED:         { label: "PIPELINE",  cls: "bg-primary/20 text-primary border border-primary",    dot: "bg-primary border-primary" },
+  GATE_SKIPPED:             { label: "SKIPPED",   cls: "bg-surface-container-highest text-on-surface-variant border border-border-muted", dot: "bg-on-surface-variant border-border-muted" },
+  APPROVAL_INHERITED:       { label: "INHERITED", cls: "bg-primary/10 text-primary border border-primary",    dot: "bg-primary border-primary" },
+  WAIVER_REQUESTED:         { label: "WAIVER",    cls: "bg-tertiary/20 text-tertiary border border-tertiary", dot: "bg-tertiary border-tertiary" },
+  WAIVER_APPROVED:          { label: "WAIVER OK", cls: "bg-primary/20 text-primary border border-primary",    dot: "bg-primary border-primary" },
+  JIRA_WRITEBACK_COMPLETE:  { label: "JIRA SYNC", cls: "bg-primary/10 text-primary border border-primary",    dot: "bg-primary border-primary" },
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {

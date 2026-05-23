@@ -17,6 +17,8 @@ enum AIControlMode {
   AI_ASSIST
   AI_REVIEW
   AI_CONTROLLED_ACTION
+  AI_GOVERNED       // AI orchestrates workflows under policy constraints
+  AI_RESTRICTED     // AI disabled for this regulated delivery (per-case override)
   EMERGENCY_LOCK
 }
 
@@ -37,6 +39,15 @@ enum GovernanceEventType {
   RISK_MITIGATED
   REGULATORY_MAPPING_ADDED
   THIRD_PARTY_REGISTERED
+  // Adaptive governance intelligence events
+  CONTEXT_ENRICHED
+  RISK_SCORED
+  PIPELINE_ADAPTED
+  GATE_SKIPPED
+  APPROVAL_INHERITED
+  WAIVER_REQUESTED
+  WAIVER_APPROVED
+  JIRA_WRITEBACK_COMPLETE
 }
 
 enum GateStatus {
@@ -130,6 +141,7 @@ model Project {
   risks              RiskItem[]
   thirdPartyDeps     ThirdPartyDependency[]
   regulatoryMappings RegulatoryMapping[]
+  governanceWaivers  GovernanceWaiver[]
 
   @@map("projects")
 }
@@ -208,12 +220,19 @@ model GovernanceCase {
   phase       String   // change-delivery|ai-deployment|incident|third-party-onboarding
   status      String   @default("active") // active|closed|archived
   ownedBy     String
+  // Source tool linkage
+  sourceEpicKey     String?  // e.g. "BANK-120" — originating Jira epic
+  sourceGovEpicKey  String?  // e.g. "BANK-145" — [GOV] epic written back to Jira
+  sourceConnectorId String?  // FK to SourceConnector (soft ref — no Prisma relation to avoid circular)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   governanceGates  GovernanceGate[]
   evidenceItems    EvidenceItem[]
+  context          GovernanceContext?
+  riskScore        GovernanceRiskScore?
+  adaptivePipeline AdaptivePipeline?
 
   @@map("governance_cases")
 }
@@ -231,6 +250,12 @@ model GovernanceGate {
   rejectedAt  DateTime?
   rejectedBy  String?
   exceptionRef String?
+  // Adaptive pipeline fields
+  definitionSlug String?  // links to GateDefinition.slug
+  sourceStoryKey String?  // Jira story key written back for this gate
+  inheritedFrom  String?  // GovernanceCase.id if this gate was auto-approved from a prior case
+  skipped        Boolean  @default(false)
+  skipReason     String?
   createdAt   DateTime    @default(now())
 
   case             GovernanceCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -359,4 +384,257 @@ model ThirdPartyDependency {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("third_party_dependencies")
+}
+
+// ═════════════════════════════════════════════
+// ADAPTIVE GOVERNANCE INTELLIGENCE LAYER
+// ═════════════════════════════════════════════
+
+// ─────────────────────────────────────────────
+// SOURCE CONNECTOR — tool-agnostic intake
+// ─────────────────────────────────────────────
+
+model SourceConnector {
+  id            String   @id @default(cuid())
+  tenantId      String?
+  type          String   // "jira"|"linear"|"github"|"azure-devops"|"servicenow"
+  name          String
+  baseUrl       String
+  credentials   Json     // encrypted: { email, apiToken } or { token }
+  webhookSecret String?  // HMAC-SHA256 secret for webhook verification
+  projectKeys   String[] // e.g. ["BANK", "CARDS"] — Jira project keys to watch
+  fieldMapping  Json?    // custom field name → governance signal mapping
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  epics EpicSnapshot[]
+
+  @@map("source_connectors")
+}
+
+// ─────────────────────────────────────────────
+// EPIC SNAPSHOT — immutable intake record
+// Never mutated after creation
+// ─────────────────────────────────────────────
+
+model EpicSnapshot {
+  id          String   @id @default(cuid())
+  connectorId String
+  sourceKey   String   // "BANK-120"
+  sourceType  String   // "epic"|"portfolio-epic"|"initiative"
+  title       String
+  description String?
+  labels      String[]
+  components  String[]
+  customFields Json?   // raw custom field values at intake time
+  timeline    Json?    // { startDate, dueDate, milestones[] }
+  snapshotAt  DateTime @default(now())
+
+  connector SourceConnector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+
+  @@index([connectorId])
+  @@index([sourceKey])
+  @@map("epic_snapshots")
+}
+
+// ─────────────────────────────────────────────
+// GOVERNANCE CONTEXT — multi-source enrichment
+// 1:1 with GovernanceCase
+// ─────────────────────────────────────────────
+
+model GovernanceContext {
+  id                   String   @id @default(cuid())
+  caseId               String   @unique
+  epicTitle            String
+  epicDescription      String?
+  sourceKey            String?
+  sourceType           String?
+  labels               String[]
+  components           String[]
+  environment          String?  // "production"|"staging"|"development"|"sandbox"
+  dataClassification   String?  // "personal"|"financial"|"public"|"confidential"|"restricted"
+  aiSystemInvolved     Boolean  @default(false)
+  thirdPartyChanges    Boolean  @default(false)
+  infrastructureChange Boolean  @default(false)
+  linkedSystemIds      String[]
+  priorIncidents       Int      @default(0)
+  lastDeployDaysAgo    Int?
+  confluenceRefs       String[]
+  contextSummary       String?  // AI-generated narrative summary
+  enrichedAt           DateTime @default(now())
+
+  case GovernanceCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("governance_contexts")
+}
+
+// ─────────────────────────────────────────────
+// GOVERNANCE RISK SCORE — 11-dimension scoring
+// 1:1 with GovernanceCase
+// ─────────────────────────────────────────────
+
+model GovernanceRiskScore {
+  id               String   @id @default(cuid())
+  caseId           String   @unique
+
+  // 11 dimensions — 0.0 to 1.0
+  productionImpact Float    @default(0)
+  customerImpact   Float    @default(0)
+  aiInvolvement    Float    @default(0)
+  dataExposure     Float    @default(0)
+  infraImpact      Float    @default(0)
+  regulatoryExp    Float    @default(0)
+  incidentHistory  Float    @default(0)
+  thirdPartyRisk   Float    @default(0)
+  deploymentCrit   Float    @default(0)
+  securitySens     Float    @default(0)
+  blastRadius      Float    @default(0)
+
+  // Computed
+  compositeScore      Float   // 0–100 weighted composite
+  intensity           String  // "minimal"|"standard"|"regulated"|"enhanced"
+  scoringConfidence   Float   // 0–1
+  aiModeRecommended   String  // suggested AIControlMode
+  reasoning           String? // AI narrative explaining score
+  retrievedPolicyIds  String[] // PolicyChunk IDs cited — RAG audit trail
+
+  scoredAt DateTime @default(now())
+
+  case GovernanceCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("governance_risk_scores")
+}
+
+// ─────────────────────────────────────────────
+// GATE DEFINITION — atomic reusable gate library
+// Built-in (isBuiltIn) + admin-created
+// ─────────────────────────────────────────────
+
+model GateDefinition {
+  id                String   @id @default(cuid())
+  tenantId          String?
+  slug              String   @unique  // "cab-approval"|"ai-risk-assessment"|"dpo-review"
+  name              String
+  description       String?
+  category          String   // "security"|"architecture"|"ai-governance"|"regulatory"|"operational"|"change-management"
+  defaultSlaHours   Int      @default(24)
+  intensityTriggers String[] // ["standard","regulated","enhanced"] — intensities that include this gate
+  skipConditions    Json?    // declarative rules: [{ field, op, value }]
+  requiredEvidence  String[] // EvidenceType values required before approval
+  approverRoles     String[] // "security"|"dpo"|"cab"|"ai-governance"|"architecture"|"regulatory"
+  isBuiltIn         Boolean  @default(false)
+  enabled           Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  @@map("gate_definitions")
+}
+
+// ─────────────────────────────────────────────
+// ADAPTIVE PIPELINE — composition audit record
+// 1:1 with GovernanceCase
+// ─────────────────────────────────────────────
+
+model AdaptivePipeline {
+  id                   String   @id @default(cuid())
+  caseId               String   @unique
+  riskScoreId          String
+  composerVersion      String   @default("1.0")
+  gatesIncluded        Json     // [{ slug, order, reason }]
+  gatesSkipped         Json     // [{ slug, skipReason, conditionMet }]
+  inheritedApprovals   Json?    // [{ gateSlug, inheritedFromCaseId, rationale }]
+  totalGateCount       Int
+  reducedFromBaseline  Int      @default(0) // gates removed vs naive baseline — the ROI metric
+  composedAt           DateTime @default(now())
+
+  case GovernanceCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("adaptive_pipelines")
+}
+
+// ─────────────────────────────────────────────
+// GOVERNANCE WAIVER — formal exception record
+// ─────────────────────────────────────────────
+
+model GovernanceWaiver {
+  id                   String    @id @default(cuid())
+  projectId            String
+  caseId               String?
+  gateId               String?
+  requestedBy          String
+  waiverType           String    // "emergency"|"time-limited"|"risk-accepted"|"expedited-path"
+  reason               String
+  residualRisk         String?   // AI-generated residual risk statement
+  compensatingControls Json?     // [{ control, owner, dueDate }]
+  status               String    @default("pending") // pending|approved|rejected|expired
+  approvedBy           String?
+  approvedAt           DateTime?
+  expiresAt            DateTime?
+  auditBundle          Json?     // full context snapshot at waiver time
+  requestedAt          DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([caseId])
+  @@map("governance_waivers")
+}
+
+// ─────────────────────────────────────────────
+// EXPERT PROFILE — reviewer routing intelligence
+// ─────────────────────────────────────────────
+
+model ExpertProfile {
+  id                 String    @id @default(cuid())
+  tenantId           String?
+  email              String    @unique
+  name               String?
+  domains            String[]  // "ai-governance"|"security"|"architecture"|"dpo"|"cab"|"regulatory"
+  jurisdictions      String[]  // ["EU","UK","US","GLOBAL"]
+  activeApprovals    Int       @default(0)
+  avgResolutionHours Float?
+  lastActiveAt       DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@map("expert_profiles")
+}
+
+// ─────────────────────────────────────────────
+// POLICY DOCUMENT — internal policy RAG corpus
+// ─────────────────────────────────────────────
+
+model PolicyDocument {
+  id          String    @id @default(cuid())
+  tenantId    String?
+  title       String
+  type        String    // "internal-policy"|"sop"|"risk-appetite"|"regulatory-guidance"
+  content     String
+  version     String?
+  effectiveAt DateTime?
+  uploadedBy  String
+  uploadedAt  DateTime  @default(now())
+  indexedAt   DateTime?
+
+  chunks PolicyChunk[]
+
+  @@map("policy_documents")
+}
+
+// ─────────────────────────────────────────────
+// POLICY CHUNK — chunked text with pgvector
+// Requires: CREATE EXTENSION IF NOT EXISTS vector
+// ─────────────────────────────────────────────
+
+model PolicyChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  chunkIndex Int
+  text       String
+  embedding  Unsupported("vector(1536)")?
+  tokenCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  document PolicyDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("policy_chunks")
 }

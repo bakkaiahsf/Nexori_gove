@@ -3,12 +3,157 @@
  * Realistic DORA ICT Risk Programme demo data.
  * Idempotent: upserts the project, skips if data already exists.
  */
-import { PrismaClient, GateStatus, ApprovalStatus, RiskSeverity, RiskStatus, EvidenceType, RegulatoryFramework, GovernanceEventType, AIControlMode } from "@prisma/client";
+import { PrismaClient, Prisma, GateStatus, ApprovalStatus, RiskSeverity, RiskStatus, EvidenceType, RegulatoryFramework, GovernanceEventType, AIControlMode } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding NexoriOS governance data...");
+
+  // ── Built-in Gate Definitions (global — not tenant/project specific) ──────
+  const builtInGates = [
+    {
+      slug: "expedited-review",
+      name: "Expedited Single Review",
+      description: "Single rapid approver review for minimal-intensity changes.",
+      category: "governance",
+      defaultSlaHours: 4,
+      intensityTriggers: ["minimal"],
+      skipConditions: Prisma.DbNull,
+      requiredEvidence: [],
+      approverRoles: ["governance-lead"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "technical-review",
+      name: "Technical Sign-off",
+      description: "Engineering lead review of technical design, implementation approach, and test coverage.",
+      category: "technical",
+      defaultSlaHours: 24,
+      intensityTriggers: ["standard", "regulated", "enhanced"],
+      skipConditions: Prisma.DbNull,
+      requiredEvidence: ["TEST_RESULT", "DOCUMENT"],
+      approverRoles: ["architecture", "engineering-lead"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "security-sign-off",
+      name: "Security Review",
+      description: "Security team review: vulnerability scan, secrets check, dependency audit.",
+      category: "security",
+      defaultSlaHours: 24,
+      intensityTriggers: ["standard", "regulated", "enhanced"],
+      skipConditions: [{ field: "infrastructureChange", op: "eq", value: false }, { field: "thirdPartyChanges", op: "eq", value: false }],
+      requiredEvidence: ["TEST_RESULT", "AUDIT_LOG"],
+      approverRoles: ["security"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "rollback-plan",
+      name: "Rollback Plan Review",
+      description: "Validated rollback and recovery procedure documented and approved before release.",
+      category: "operational",
+      defaultSlaHours: 12,
+      intensityTriggers: ["regulated", "enhanced"],
+      skipConditions: Prisma.DbNull,
+      requiredEvidence: ["DOCUMENT"],
+      approverRoles: ["engineering-lead", "cab"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "cab-approval",
+      name: "CAB Approval",
+      description: "Change Advisory Board sign-off required for all production releases.",
+      category: "governance",
+      defaultSlaHours: 48,
+      intensityTriggers: ["regulated", "enhanced"],
+      skipConditions: [{ field: "environment", op: "neq", value: "production" }],
+      requiredEvidence: ["DOCUMENT"],
+      approverRoles: ["cab"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "dpo-review",
+      name: "DPO Sign-off",
+      description: "Data Protection Officer review when personal or sensitive data is involved.",
+      category: "privacy",
+      defaultSlaHours: 72,
+      intensityTriggers: ["regulated", "enhanced"],
+      skipConditions: [{ field: "dataClassification", op: "notIn", value: ["personal", "sensitive", "special-category"] }],
+      requiredEvidence: ["DOCUMENT", "SIGNED_ATTESTATION"],
+      approverRoles: ["dpo"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "dora-third-party",
+      name: "DORA Third-Party Review",
+      description: "DORA Article 28 ICT third-party risk assessment and register update.",
+      category: "regulatory",
+      defaultSlaHours: 72,
+      intensityTriggers: ["regulated", "enhanced"],
+      skipConditions: [{ field: "thirdPartyChanges", op: "eq", value: false }],
+      requiredEvidence: ["SIGNED_ATTESTATION", "DOCUMENT"],
+      approverRoles: ["regulatory", "security"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "ai-risk-assessment",
+      name: "AI Risk Assessment",
+      description: "EU AI Act Article 9 risk management: bias, drift, explainability, human oversight verification.",
+      category: "ai-governance",
+      defaultSlaHours: 48,
+      intensityTriggers: ["regulated", "enhanced"],
+      skipConditions: [{ field: "aiSystemInvolved", op: "eq", value: false }],
+      requiredEvidence: ["AUDIT_LOG", "TEST_RESULT", "DOCUMENT"],
+      approverRoles: ["ai-governance", "regulatory"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "conformity-assessment",
+      name: "EU AI Act Conformity Assessment",
+      description: "Full conformity assessment per EU AI Act Annex VI or VII for high-risk AI systems.",
+      category: "regulatory",
+      defaultSlaHours: 120,
+      intensityTriggers: ["enhanced"],
+      skipConditions: [{ field: "regulatoryScope", op: "notContains", value: "EU_AI_ACT" }],
+      requiredEvidence: ["SIGNED_ATTESTATION", "AUDIT_LOG", "DOCUMENT"],
+      approverRoles: ["regulatory", "ai-governance", "dpo"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "fundamental-rights",
+      name: "Fundamental Rights Assessment",
+      description: "Assessment of impact on fundamental rights for high-risk AI systems per EU AI Act Art. 27.",
+      category: "regulatory",
+      defaultSlaHours: 120,
+      intensityTriggers: ["enhanced"],
+      skipConditions: [{ field: "aiInvolvementScore", op: "lt", value: 0.7 }],
+      requiredEvidence: ["DOCUMENT", "SIGNED_ATTESTATION"],
+      approverRoles: ["dpo", "regulatory", "ai-governance"],
+      isBuiltIn: true,
+    },
+    {
+      slug: "ai-governance-committee",
+      name: "AI Governance Committee",
+      description: "Board-level AI Governance Committee sign-off for strategic or high-risk AI deployments.",
+      category: "ai-governance",
+      defaultSlaHours: 168,
+      intensityTriggers: ["enhanced"],
+      skipConditions: [{ field: "aiInvolvementScore", op: "lt", value: 0.7 }],
+      requiredEvidence: ["SIGNED_ATTESTATION", "DOCUMENT", "AUDIT_LOG"],
+      approverRoles: ["ai-governance", "cab", "regulatory"],
+      isBuiltIn: true,
+    },
+  ];
+
+  for (const gate of builtInGates) {
+    await prisma.gateDefinition.upsert({
+      where: { slug: gate.slug },
+      update: { name: gate.name, description: gate.description, category: gate.category, intensityTriggers: gate.intensityTriggers, skipConditions: gate.skipConditions, requiredEvidence: gate.requiredEvidence, approverRoles: gate.approverRoles, defaultSlaHours: gate.defaultSlaHours },
+      create: gate,
+    });
+  }
+  console.log(`  ✓ GateDefinitions: ${builtInGates.length} built-in gates seeded`);
 
   // ── Project ──────────────────────────────────────────────────────────────
   const project = await prisma.project.upsert({

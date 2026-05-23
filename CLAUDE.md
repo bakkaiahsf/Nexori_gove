@@ -1,9 +1,9 @@
 # NexoriOS — Claude Code Master Context
 
 > **Product:** NexoriOS — Enterprise Governance Operating Platform
-> **Founder/Architect:** Bakkaiah
-> **Stack:** Next.js 14 · TypeScript strict · Tailwind CSS · Prisma · Supabase PostgreSQL · Vercel
-> **Repo:** `Nexori-AI` → GitHub: `bakkaiahsf/Nexori_gove`
+> **Founder/Architect:**  AI Agency Founder)
+> **Stack:** Next.js · TypeScript · Tailwind CSS · ShadCN UI · Node.js · Prisma · PostgreSQL · Vercel
+> **Repo target:** `nexori-governance-os` (new clean repo, not extended Nexus Console)
 
 ---
 
