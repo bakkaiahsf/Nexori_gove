@@ -101,15 +101,16 @@ jobs:
         run: npm ci
 
       - name: Validate Prisma schema
-        run: DIRECT_URL="${DIRECT_URL:-$DATABASE_URL}" npx prisma validate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          export DATABASE_URL="postgresql://ci:ci@localhost:5432/nexori_ci"
+          export DIRECT_URL="postgresql://ci:ci@localhost:5432/nexori_ci"
+          npx prisma validate
 
       - name: Generate Prisma client
-        run: npx prisma generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          export DATABASE_URL="postgresql://ci:ci@localhost:5432/nexori_ci"
+          export DIRECT_URL="postgresql://ci:ci@localhost:5432/nexori_ci"
+          npx prisma generate
 
   # ── Job 4a: Deploy Preview (PRs) ────────────────────────────
   deploy-preview:
