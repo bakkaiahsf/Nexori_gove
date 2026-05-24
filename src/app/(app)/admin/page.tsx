@@ -33,34 +33,31 @@ const ADMIN_SECTIONS = [
     badgeCls: "text-primary border-primary bg-primary/10",
   },
   {
-    href: "/api/governance/gate-library",
+    href: "/admin/gate-library",
     icon: "checklist",
     title: "Gate Library",
     description:
       "Define reusable governance gates with skip conditions, SLAs, and required evidence types. Built-in gates plus admin-created custom gates.",
     badge: "GATE ENGINE",
     badgeCls: "text-primary border-primary bg-primary/10",
-    external: true,
   },
   {
-    href: "/api/experts",
+    href: "/admin/experts",
     icon: "group",
     title: "Expert Profiles",
     description:
       "Register governance reviewers with domain expertise, jurisdiction coverage, and workload caps. AI routes approvals to the right expert.",
     badge: "ROUTING",
     badgeCls: "text-primary border-primary bg-primary/10",
-    external: true,
   },
   {
-    href: "/api/policies",
+    href: "/admin/policy",
     icon: "description",
     title: "Policy Document RAG",
     description:
       "Upload internal policies and SOPs. The platform indexes them into a governance-aware RAG corpus. AI cites policy chunks in every response.",
     badge: "INTELLIGENCE",
     badgeCls: "text-tertiary border-tertiary bg-tertiary/10",
-    external: true,
   },
 ];
 

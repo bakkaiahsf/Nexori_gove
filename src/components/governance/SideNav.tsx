@@ -33,6 +33,8 @@ const NAV_GROUPS = [
       { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
       { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
       { href: "/admin/connectors", icon: "hub", label: "Connectors" },
+      { href: "/admin/gate-library", icon: "checklist", label: "Gate Library" },
+      { href: "/admin/experts", icon: "group", label: "Expert Profiles" },
       { href: "/admin/policy", icon: "description", label: "Policy Corpus" },
     ],
   },
