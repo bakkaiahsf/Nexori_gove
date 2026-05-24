@@ -21,8 +21,16 @@ const SUGGESTED_QUESTIONS = [
   "How should we handle a critical vulnerability found post-deployment?",
 ];
 
-function Icon({ name, size = 18, fill = false, className = "" }: {
-  name: string; size?: number; fill?: boolean; className?: string;
+function Icon({
+  name,
+  size = 18,
+  fill = false,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  fill?: boolean;
+  className?: string;
 }) {
   return (
     <span
@@ -241,7 +249,9 @@ export default function IntelligenceQueryPanel({
         {/* Left: query + response */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-lg">
           {/* Query input */}
-          <div className={`border ${isBlocked ? "border-critical/30 bg-critical/5" : "border-primary/30 bg-primary/5"}`}>
+          <div
+            className={`border ${isBlocked ? "border-critical/30 bg-critical/5" : "border-primary/30 bg-primary/5"}`}
+          >
             <textarea
               ref={textareaRef}
               value={query}
@@ -298,7 +308,10 @@ export default function IntelligenceQueryPanel({
               <div>
                 <p className="font-mono-technical text-[11px] text-critical">{error}</p>
                 <button
-                  onClick={() => { setError(null); void submit(query); }}
+                  onClick={() => {
+                    setError(null);
+                    void submit(query);
+                  }}
                   className="mt-sm font-mono-technical text-[10px] text-primary hover:underline"
                 >
                   RETRY →
@@ -327,7 +340,10 @@ export default function IntelligenceQueryPanel({
                     </span>
                   )}
                   {!streaming && result?.usageEventId && (
-                    <span className="font-mono-technical text-[10px] text-on-surface-variant" title={result.usageEventId}>
+                    <span
+                      className="font-mono-technical text-[10px] text-on-surface-variant"
+                      title={result.usageEventId}
+                    >
                       LOGGED ✓
                     </span>
                   )}
@@ -353,7 +369,12 @@ export default function IntelligenceQueryPanel({
               {history.slice(1).map((h, i) => (
                 <button
                   key={i}
-                  onClick={() => { setQuery(h.query); setResult(h.result); setError(null); setStreamedText(""); }}
+                  onClick={() => {
+                    setQuery(h.query);
+                    setResult(h.result);
+                    setError(null);
+                    setStreamedText("");
+                  }}
                   className="w-full text-left px-lg py-sm border border-border-muted hover:border-primary transition-colors"
                 >
                   <p className="font-body-base text-body-base text-on-surface-variant text-[12px] truncate">
@@ -377,7 +398,10 @@ export default function IntelligenceQueryPanel({
                 <button
                   key={q}
                   disabled={isBlocked || streaming}
-                  onClick={() => { setQuery(q); textareaRef.current?.focus(); }}
+                  onClick={() => {
+                    setQuery(q);
+                    textareaRef.current?.focus();
+                  }}
                   className="w-full text-left px-md py-sm border border-border-muted hover:border-primary hover:bg-primary/5 transition-colors group disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <p className="font-body-base text-body-base text-on-surface-variant text-[11px] group-hover:text-on-surface leading-snug">
@@ -403,7 +427,9 @@ export default function IntelligenceQueryPanel({
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-sm">
                 <Icon name={item.icon} size={12} className="text-primary shrink-0" />
-                <p className="font-mono-technical text-[10px] text-on-surface-variant">{item.label}</p>
+                <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                  {item.label}
+                </p>
               </div>
             ))}
           </div>

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TriggerAction, Prisma } from "@prisma/client";
 import prisma from "@/lib/db";
-import { verifyGitHubWebhookSignature, buildGitHubConnector, mapPRToEpicData } from "@/lib/connectors/github";
+import {
+  verifyGitHubWebhookSignature,
+  buildGitHubConnector,
+  mapPRToEpicData,
+} from "@/lib/connectors/github";
 import { evaluateTriggerRules } from "@/lib/governance/trigger";
 import { orchestrateGovernanceCase } from "@/lib/governance/orchestrate";
 
@@ -42,7 +46,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const connector = await prisma.sourceConnector.findUnique({ where: { id: connectorId } });
   if (!connector?.webhookSecret) {
-    return NextResponse.json({ error: "Connector not found or no webhook secret" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Connector not found or no webhook secret" },
+      { status: 404 }
+    );
   }
 
   // Always verify HMAC signature for GitHub
@@ -83,8 +90,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Persist or upsert the PullRequest record
-  const state =
-    pr.merged_at ? "merged" : pr.state === "closed" ? "closed" : "open";
+  const state = pr.merged_at ? "merged" : pr.state === "closed" ? "closed" : "open";
 
   const prRecord = await prisma.pullRequest.upsert({
     where: {

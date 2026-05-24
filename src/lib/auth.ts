@@ -21,7 +21,12 @@ const DEMO_USERS = [
     name: "Board Observer",
     role: "viewer" as const,
   },
-] satisfies Array<{ id: string; email: string; name: string; role: "admin" | "governance-owner" | "approver" | "viewer" }>;
+] satisfies Array<{
+  id: string;
+  email: string;
+  name: string;
+  role: "admin" | "governance-owner" | "approver" | "viewer";
+}>;
 
 const DEMO_PASSWORD = "nexori2025";
 
@@ -46,7 +51,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.role = (user as typeof DEMO_USERS[number]).role;
+        token.role = (user as (typeof DEMO_USERS)[number]).role;
         token.id = user.id ?? token.sub ?? "";
       }
       return token;

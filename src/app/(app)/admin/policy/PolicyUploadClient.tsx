@@ -15,22 +15,33 @@ interface PolicyDoc {
 }
 
 const DOC_TYPES = [
-  { value: "internal-policy",       label: "Internal Policy" },
-  { value: "sop",                   label: "Standard Operating Procedure" },
-  { value: "risk-appetite",         label: "Risk Appetite Statement" },
-  { value: "regulatory-guidance",   label: "Regulatory Guidance" },
+  { value: "internal-policy", label: "Internal Policy" },
+  { value: "sop", label: "Standard Operating Procedure" },
+  { value: "risk-appetite", label: "Risk Appetite Statement" },
+  { value: "regulatory-guidance", label: "Regulatory Guidance" },
 ];
 
 const TYPE_BADGE: Record<string, string> = {
-  "internal-policy":      "text-primary border-primary bg-primary/10",
-  "sop":                  "text-tertiary border-tertiary bg-tertiary/10",
-  "risk-appetite":        "text-critical border-critical bg-critical/10",
-  "regulatory-guidance":  "text-on-surface-variant border-border-muted",
+  "internal-policy": "text-primary border-primary bg-primary/10",
+  sop: "text-tertiary border-tertiary bg-tertiary/10",
+  "risk-appetite": "text-critical border-critical bg-critical/10",
+  "regulatory-guidance": "text-on-surface-variant border-border-muted",
 };
 
-function Icon({ name, size = 16, className = "" }: { name: string; size?: number; className?: string }) {
+function Icon({
+  name,
+  size = 16,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  className?: string;
+}) {
   return (
-    <span className={`material-symbols-outlined select-none leading-none ${className}`} style={{ fontSize: size }}>
+    <span
+      className={`material-symbols-outlined select-none leading-none ${className}`}
+      style={{ fontSize: size }}
+    >
       {name}
     </span>
   );
@@ -81,14 +92,17 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         setErrorMsg(typeof err.error === "string" ? err.error : "Upload failed");
         setState("error");
         return;
       }
 
       setState("done");
-      setTitle(""); setContent(""); setVersion(""); setDocType("internal-policy");
+      setTitle("");
+      setContent("");
+      setVersion("");
+      setDocType("internal-policy");
       router.refresh();
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "Network error");
@@ -112,7 +126,6 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1000px] mx-auto space-y-xl">
-
           {/* Upload form */}
           <div className="bg-surface border border-border-muted">
             <div className="px-xl py-lg border-b border-border-muted">
@@ -120,14 +133,17 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                 UPLOAD POLICY DOCUMENT
               </h2>
               <p className="font-mono-technical text-[10px] text-on-surface-variant mt-xs">
-                Documents are chunked (512 tokens) and indexed for hybrid RAG retrieval in governance queries.
+                Documents are chunked (512 tokens) and indexed for hybrid RAG retrieval in
+                governance queries.
               </p>
             </div>
 
             <div className="p-xl space-y-lg">
               <div className="grid grid-cols-2 gap-lg">
                 <div>
-                  <label className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest block mb-xs">TITLE *</label>
+                  <label className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest block mb-xs">
+                    TITLE *
+                  </label>
                   <input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -136,7 +152,9 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                   />
                 </div>
                 <div>
-                  <label className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest block mb-xs">VERSION</label>
+                  <label className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest block mb-xs">
+                    VERSION
+                  </label>
                   <input
                     value={version}
                     onChange={(e) => setVersion(e.target.value)}
@@ -147,7 +165,9 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
               </div>
 
               <div>
-                <label className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest block mb-xs">DOCUMENT TYPE *</label>
+                <label className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest block mb-xs">
+                  DOCUMENT TYPE *
+                </label>
                 <div className="flex gap-xs flex-wrap">
                   {DOC_TYPES.map((t) => (
                     <button
@@ -181,14 +201,22 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                   type="file"
                   accept=".txt,.md,.text"
                   className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) readFile(f);
+                  }}
                 />
                 <div
-                  onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragging(true);
+                  }}
                   onDragLeave={() => setDragging(false)}
                   onDrop={onDrop}
                   className={`relative border-2 border-dashed transition-colors ${
-                    dragging ? "border-primary bg-primary/5" : "border-border-muted hover:border-primary/40"
+                    dragging
+                      ? "border-primary bg-primary/5"
+                      : "border-border-muted hover:border-primary/40"
                   }`}
                 >
                   <textarea
@@ -206,12 +234,15 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                 </div>
                 {content && (
                   <p className="font-mono-technical text-[9px] text-on-surface-variant mt-xs">
-                    {content.length.toLocaleString()} chars · ~{Math.ceil(content.length / 2000)} chunk{content.length > 2000 ? "s" : ""} estimated
+                    {content.length.toLocaleString()} chars · ~{Math.ceil(content.length / 2000)}{" "}
+                    chunk{content.length > 2000 ? "s" : ""} estimated
                   </p>
                 )}
               </div>
 
-              {errorMsg && <p className="font-mono-technical text-[11px] text-critical">{errorMsg}</p>}
+              {errorMsg && (
+                <p className="font-mono-technical text-[11px] text-critical">{errorMsg}</p>
+              )}
 
               <button
                 onClick={() => void submit()}
@@ -219,11 +250,18 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                 className="flex items-center gap-sm px-xl py-md bg-primary text-background font-mono-technical text-[11px] hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {state === "saving" ? (
-                  <><span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" /> UPLOADING & INDEXING…</>
+                  <>
+                    <span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" />{" "}
+                    UPLOADING & INDEXING…
+                  </>
                 ) : state === "done" ? (
-                  <><Icon name="check_circle" size={14} className="text-background" /> INDEXED ✓</>
+                  <>
+                    <Icon name="check_circle" size={14} className="text-background" /> INDEXED ✓
+                  </>
                 ) : (
-                  <><Icon name="upload_file" size={14} className="text-background" /> UPLOAD & INDEX</>
+                  <>
+                    <Icon name="upload_file" size={14} className="text-background" /> UPLOAD & INDEX
+                  </>
                 )}
               </button>
             </div>
@@ -239,7 +277,9 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
             {documents.length === 0 ? (
               <div className="p-xl text-center">
                 <Icon name="description" size={32} className="text-on-surface-variant mb-md" />
-                <p className="font-body-base text-body-base text-on-surface-variant">No policy documents indexed yet.</p>
+                <p className="font-body-base text-body-base text-on-surface-variant">
+                  No policy documents indexed yet.
+                </p>
                 <p className="font-mono-technical text-[10px] text-on-surface-variant mt-xs">
                   Upload documents above to power the governance intelligence RAG queries.
                 </p>
@@ -253,8 +293,12 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-sm flex-wrap mb-xs">
-                        <span className="font-body-bold text-body-bold text-on-surface text-[13px]">{doc.title}</span>
-                        <span className={`px-1.5 py-0.5 font-mono-technical text-[9px] border ${TYPE_BADGE[doc.type] ?? TYPE_BADGE["regulatory-guidance"]}`}>
+                        <span className="font-body-bold text-body-bold text-on-surface text-[13px]">
+                          {doc.title}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 font-mono-technical text-[9px] border ${TYPE_BADGE[doc.type] ?? TYPE_BADGE["regulatory-guidance"]}`}
+                        >
                           {doc.type.replace(/-/g, " ").toUpperCase()}
                         </span>
                         {doc.version && (
@@ -264,7 +308,13 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                         )}
                       </div>
                       <p className="font-mono-technical text-[10px] text-on-surface-variant">
-                        Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} by {doc.uploadedBy}
+                        Uploaded{" "}
+                        {new Date(doc.uploadedAt).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}{" "}
+                        by {doc.uploadedBy}
                       </p>
                     </div>
                     <div className="text-right shrink-0 space-y-xs">
@@ -274,9 +324,13 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
                           {doc._count.chunks} CHUNKS INDEXED
                         </span>
                       ) : (
-                        <span className="font-mono-technical text-[10px] text-on-surface-variant">NOT YET INDEXED</span>
+                        <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                          NOT YET INDEXED
+                        </span>
                       )}
-                      <p className="font-mono-technical text-[9px] text-on-surface-variant">{doc.id.slice(-8).toUpperCase()}</p>
+                      <p className="font-mono-technical text-[9px] text-on-surface-variant">
+                        {doc.id.slice(-8).toUpperCase()}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -287,7 +341,10 @@ export default function PolicyUploadClient({ documents }: { documents: PolicyDoc
       </div>
 
       <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center px-xl font-mono-technical text-[10px] text-on-surface-variant shrink-0">
-        <span>POLICY CORPUS: {documents.length} DOCS · {documents.reduce((s, d) => s + d._count.chunks, 0)} CHUNKS · RAG ENGINE: READY</span>
+        <span>
+          POLICY CORPUS: {documents.length} DOCS ·{" "}
+          {documents.reduce((s, d) => s + d._count.chunks, 0)} CHUNKS · RAG ENGINE: READY
+        </span>
       </footer>
     </>
   );

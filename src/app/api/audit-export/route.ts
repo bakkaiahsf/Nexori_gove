@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
     }),
     prisma.evidenceItem.findMany({
       where: { projectId: project.id },
-      include: { regulatoryMappings: { select: { framework: true, controlId: true, verifiedAt: true } } },
+      include: {
+        regulatoryMappings: { select: { framework: true, controlId: true, verifiedAt: true } },
+      },
       orderBy: { submittedAt: "desc" },
     }),
     prisma.riskItem.findMany({

@@ -47,7 +47,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const connector = await prisma.sourceConnector.findUnique({ where: { id: connectorId } });
   if (!connector?.webhookSecret) {
-    return NextResponse.json({ error: "Connector not found or no webhook secret" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Connector not found or no webhook secret" },
+      { status: 404 }
+    );
   }
 
   if (!verifyGitLabWebhookToken(tokenHeader, connector.webhookSecret)) {
@@ -62,7 +65,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Only handle Merge Request events
-  if (body.object_kind !== "merge_request" && !gitlabEvent.toLowerCase().includes("merge request")) {
+  if (
+    body.object_kind !== "merge_request" &&
+    !gitlabEvent.toLowerCase().includes("merge request")
+  ) {
     return NextResponse.json({ status: "ignored", reason: "not a merge request event" });
   }
 

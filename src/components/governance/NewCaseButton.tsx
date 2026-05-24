@@ -5,19 +5,30 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 const PHASES = [
-  { value: "change-delivery",         label: "Change Delivery" },
-  { value: "ai-deployment",           label: "AI Deployment" },
-  { value: "third-party-onboarding",  label: "Third-Party Onboarding" },
-  { value: "code-review",             label: "Code Review / PR" },
-  { value: "incident",                label: "Incident Response" },
-  { value: "sprint-governance",       label: "Sprint Governance" },
-  { value: "release",                 label: "Release / Deployment" },
-  { value: "policy-update",           label: "Policy Update" },
+  { value: "change-delivery", label: "Change Delivery" },
+  { value: "ai-deployment", label: "AI Deployment" },
+  { value: "third-party-onboarding", label: "Third-Party Onboarding" },
+  { value: "code-review", label: "Code Review / PR" },
+  { value: "incident", label: "Incident Response" },
+  { value: "sprint-governance", label: "Sprint Governance" },
+  { value: "release", label: "Release / Deployment" },
+  { value: "policy-update", label: "Policy Update" },
 ];
 
-function Icon({ name, size = 16, className = "" }: { name: string; size?: number; className?: string }) {
+function Icon({
+  name,
+  size = 16,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  className?: string;
+}) {
   return (
-    <span className={`material-symbols-outlined select-none leading-none ${className}`} style={{ fontSize: size }}>
+    <span
+      className={`material-symbols-outlined select-none leading-none ${className}`}
+      style={{ fontSize: size }}
+    >
       {name}
     </span>
   );
@@ -60,13 +71,13 @@ export default function NewCaseButton() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         setErrorMsg(typeof err.error === "string" ? err.error : "Failed to create case");
         setState("error");
         return;
       }
 
-      const data = await res.json() as { caseId: string };
+      const data = (await res.json()) as { caseId: string };
       close();
       router.push(`/cases/${data.caseId}`);
       router.refresh();
@@ -167,9 +178,14 @@ export default function NewCaseButton() {
                   className="flex-1 flex items-center justify-center gap-sm py-md bg-primary text-background font-mono-technical text-[11px] hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {state === "saving" ? (
-                    <><span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" /> CREATING…</>
+                    <>
+                      <span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" />{" "}
+                      CREATING…
+                    </>
                   ) : (
-                    <><Icon name="add_circle" size={14} className="text-background" /> CREATE CASE</>
+                    <>
+                      <Icon name="add_circle" size={14} className="text-background" /> CREATE CASE
+                    </>
                   )}
                 </button>
                 <button
@@ -181,7 +197,8 @@ export default function NewCaseButton() {
               </div>
 
               <p className="font-mono-technical text-[9px] text-on-surface-variant">
-                A GovernanceEvent (CASE_CREATED) will be emitted to the flight recorder. Risk scoring and gate pipeline can be triggered from the case detail.
+                A GovernanceEvent (CASE_CREATED) will be emitted to the flight recorder. Risk
+                scoring and gate pipeline can be triggered from the case detail.
               </p>
             </div>
           </div>

@@ -12,13 +12,25 @@ interface WaiverResult {
 }
 
 const WAIVER_TYPES = [
-  { value: "emergency",       label: "Emergency",        desc: "Immediate risk to operations" },
-  { value: "time-limited",    label: "Time-Limited",     desc: "Temporary exception with expiry" },
-  { value: "risk-accepted",   label: "Risk Accepted",    desc: "Risk formally accepted by owner" },
-  { value: "expedited-path",  label: "Expedited Path",   desc: "Fast-track review for low-risk change" },
+  { value: "emergency", label: "Emergency", desc: "Immediate risk to operations" },
+  { value: "time-limited", label: "Time-Limited", desc: "Temporary exception with expiry" },
+  { value: "risk-accepted", label: "Risk Accepted", desc: "Risk formally accepted by owner" },
+  {
+    value: "expedited-path",
+    label: "Expedited Path",
+    desc: "Fast-track review for low-risk change",
+  },
 ];
 
-function Icon({ name, size = 14, className = "" }: { name: string; size?: number; className?: string }) {
+function Icon({
+  name,
+  size = 14,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  className?: string;
+}) {
   return (
     <span
       className={`material-symbols-outlined select-none leading-none ${className}`}
@@ -69,13 +81,13 @@ export default function WaiverRequestButton({
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         setErrorMsg(err.error ?? `Request failed (${res.status})`);
         setState("error");
         return;
       }
 
-      const data = await res.json() as WaiverResult;
+      const data = (await res.json()) as WaiverResult;
       setResult(data);
       setState("done");
       router.refresh();
@@ -100,9 +112,18 @@ export default function WaiverRequestButton({
   return (
     <div className="border border-tertiary/50 bg-surface-container-low p-lg space-y-md">
       <div className="flex items-center justify-between">
-        <p className="font-mono-technical text-[10px] text-tertiary tracking-widest">WAIVER REQUEST — {gateName}</p>
-        <button onClick={() => { setOpen(false); setState("idle"); setResult(null); setErrorMsg(""); }}
-          className="text-on-surface-variant hover:text-on-surface">
+        <p className="font-mono-technical text-[10px] text-tertiary tracking-widest">
+          WAIVER REQUEST — {gateName}
+        </p>
+        <button
+          onClick={() => {
+            setOpen(false);
+            setState("idle");
+            setResult(null);
+            setErrorMsg("");
+          }}
+          className="text-on-surface-variant hover:text-on-surface"
+        >
           <Icon name="close" size={14} />
         </button>
       </div>
@@ -112,31 +133,49 @@ export default function WaiverRequestButton({
         <div className="space-y-md">
           <div className="flex items-center gap-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
-            <p className="font-mono-technical text-[10px] text-tertiary">WAIVER SUBMITTED — PENDING APPROVAL</p>
+            <p className="font-mono-technical text-[10px] text-tertiary">
+              WAIVER SUBMITTED — PENDING APPROVAL
+            </p>
           </div>
 
           <div className="bg-surface border border-tertiary/30 p-md space-y-sm">
-            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">AI RESIDUAL RISK ANALYSIS</p>
-            <p className="font-mono-technical text-[11px] text-on-surface leading-relaxed">{result.residualRisk}</p>
+            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+              AI RESIDUAL RISK ANALYSIS
+            </p>
+            <p className="font-mono-technical text-[11px] text-on-surface leading-relaxed">
+              {result.residualRisk}
+            </p>
           </div>
 
           {result.compensatingControls.length > 0 && (
             <div className="space-y-xs">
-              <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">COMPENSATING CONTROLS</p>
+              <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+                COMPENSATING CONTROLS
+              </p>
               {result.compensatingControls.map((ctrl, i) => (
                 <div key={i} className="flex items-start gap-sm border-l-2 border-primary/40 pl-sm">
                   <Icon name="shield" size={11} className="text-primary mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-mono-technical text-[10px] text-on-surface">{ctrl.control}</p>
-                    <p className="font-mono-technical text-[9px] text-on-surface-variant">Owner: {ctrl.owner}</p>
+                    <p className="font-mono-technical text-[10px] text-on-surface">
+                      {ctrl.control}
+                    </p>
+                    <p className="font-mono-technical text-[9px] text-on-surface-variant">
+                      Owner: {ctrl.owner}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          <button onClick={() => { setOpen(false); setState("idle"); setResult(null); }}
-            className="w-full font-mono-technical text-[10px] text-primary border border-primary py-xs hover:bg-primary/10 transition-colors">
+          <button
+            onClick={() => {
+              setOpen(false);
+              setState("idle");
+              setResult(null);
+            }}
+            className="w-full font-mono-technical text-[10px] text-primary border border-primary py-xs hover:bg-primary/10 transition-colors"
+          >
             CLOSE
           </button>
         </div>
@@ -156,14 +195,18 @@ export default function WaiverRequestButton({
                 }`}
               >
                 <p className="font-mono-technical text-[10px] text-on-surface">{t.label}</p>
-                <p className="font-mono-technical text-[9px] text-on-surface-variant leading-snug">{t.desc}</p>
+                <p className="font-mono-technical text-[9px] text-on-surface-variant leading-snug">
+                  {t.desc}
+                </p>
               </button>
             ))}
           </div>
 
           {/* Reason */}
           <div>
-            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest mb-xs">JUSTIFICATION (REQUIRED)</p>
+            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest mb-xs">
+              JUSTIFICATION (REQUIRED)
+            </p>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -173,9 +216,7 @@ export default function WaiverRequestButton({
             />
           </div>
 
-          {errorMsg && (
-            <p className="font-mono-technical text-[10px] text-critical">{errorMsg}</p>
-          )}
+          {errorMsg && <p className="font-mono-technical text-[10px] text-critical">{errorMsg}</p>}
 
           <div className="flex items-center gap-sm">
             <button
@@ -184,13 +225,21 @@ export default function WaiverRequestButton({
               className="flex-1 flex items-center justify-center gap-sm py-sm bg-tertiary text-background font-mono-technical text-[10px] hover:bg-tertiary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {state === "submitting" ? (
-                <><span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" /> SUBMITTING…</>
+                <>
+                  <span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" />{" "}
+                  SUBMITTING…
+                </>
               ) : (
-                <><Icon name="policy" size={12} className="text-background" /> SUBMIT WAIVER</>
+                <>
+                  <Icon name="policy" size={12} className="text-background" /> SUBMIT WAIVER
+                </>
               )}
             </button>
             <button
-              onClick={() => { setOpen(false); setState("idle"); }}
+              onClick={() => {
+                setOpen(false);
+                setState("idle");
+              }}
               className="px-md py-sm border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-on-surface-variant"
             >
               CANCEL
@@ -198,7 +247,8 @@ export default function WaiverRequestButton({
           </div>
 
           <p className="font-mono-technical text-[9px] text-on-surface-variant">
-            AI will analyse residual risk and suggest compensating controls. Waiver requires approval.
+            AI will analyse residual risk and suggest compensating controls. Waiver requires
+            approval.
           </p>
         </div>
       )}

@@ -17,7 +17,9 @@ function IntensityBadge({ intensity }: { intensity: string | undefined }) {
   };
   if (!intensity) return null;
   return (
-    <span className={`px-2 py-0.5 font-mono-technical text-[9px] border ${map[intensity] ?? map.standard}`}>
+    <span
+      className={`px-2 py-0.5 font-mono-technical text-[9px] border ${map[intensity] ?? map.standard}`}
+    >
       {intensity.toUpperCase()}
     </span>
   );
@@ -54,7 +56,11 @@ function OrchBreadcrumb({
   const steps = [
     { label: "EVENT RECEIVED", sub: triggerEval?.sourceType ?? "TRIGGER", state: step1 },
     { label: "INTELLIGENCE", sub: context ? "ENRICHED" : "—", state: step2 },
-    { label: "RISK SCORED", sub: riskScore ? `${Math.round(riskScore.compositeScore * 100)}` : "—", state: step3 },
+    {
+      label: "RISK SCORED",
+      sub: riskScore ? `${Math.round(riskScore.compositeScore * 100)}` : "—",
+      state: step3,
+    },
     { label: "GATE PIPELINE", sub: gates.length > 0 ? `${gates.length} GATES` : "—", state: step4 },
   ];
 
@@ -76,12 +82,18 @@ function OrchBreadcrumb({
           <div className={`flex items-center gap-xs border px-md py-xs ${stateClass[step.state]}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${dotClass[step.state]}`} />
             <div>
-              <p className="font-mono-technical text-[9px] tracking-widest leading-none">{step.label}</p>
-              <p className="font-mono-technical text-[8px] opacity-70 leading-none mt-0.5">{step.sub}</p>
+              <p className="font-mono-technical text-[9px] tracking-widest leading-none">
+                {step.label}
+              </p>
+              <p className="font-mono-technical text-[8px] opacity-70 leading-none mt-0.5">
+                {step.sub}
+              </p>
             </div>
           </div>
           {i < steps.length - 1 && (
-            <div className={`h-px w-4 ${step.state === "done" ? "bg-primary/40" : "bg-border-muted"}`} />
+            <div
+              className={`h-px w-4 ${step.state === "done" ? "bg-primary/40" : "bg-border-muted"}`}
+            />
           )}
         </div>
       ))}
@@ -108,10 +120,12 @@ function GatePill({
   const isPending = gate.status === "PENDING" && !gate.pendingApprovalId && !isSkipped;
 
   let pillClass = "border border-border-muted text-on-surface-variant bg-surface-container-high";
-  if (isSkipped) pillClass = "border border-border-muted text-on-surface-variant/30 bg-surface line-through";
+  if (isSkipped)
+    pillClass = "border border-border-muted text-on-surface-variant/30 bg-surface line-through";
   else if (isRejected) pillClass = "border border-critical text-critical bg-critical/10";
   else if (isApproved) pillClass = "border border-primary text-primary bg-primary/10";
-  else if (isPendingApproval) pillClass = "border border-tertiary text-tertiary bg-tertiary/10 animate-pulse";
+  else if (isPendingApproval)
+    pillClass = "border border-tertiary text-tertiary bg-tertiary/10 animate-pulse";
   else if (isInherited) pillClass = "border border-primary/40 text-primary/60 bg-primary/5";
 
   return (
@@ -122,32 +136,44 @@ function GatePill({
         className={`flex items-center gap-xs px-md py-xs font-mono-technical text-[10px] whitespace-nowrap transition-all ${pillClass} ${isPendingApproval ? "cursor-pointer hover:brightness-110" : "cursor-default"}`}
       >
         {isSkipped && (
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>skip_next</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+            skip_next
+          </span>
         )}
         {isApproved && (
-          <span className="material-symbols-outlined text-primary" style={{ fontSize: 10 }}>check_circle</span>
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: 10 }}>
+            check_circle
+          </span>
         )}
         {isRejected && (
-          <span className="material-symbols-outlined text-critical" style={{ fontSize: 10 }}>cancel</span>
+          <span className="material-symbols-outlined text-critical" style={{ fontSize: 10 }}>
+            cancel
+          </span>
         )}
         {isPendingApproval && (
-          <span className="material-symbols-outlined text-tertiary" style={{ fontSize: 10 }}>pending</span>
+          <span className="material-symbols-outlined text-tertiary" style={{ fontSize: 10 }}>
+            pending
+          </span>
         )}
         {isPending && (
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>radio_button_unchecked</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+            radio_button_unchecked
+          </span>
         )}
         {isInherited && !isApproved && (
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>content_copy</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+            content_copy
+          </span>
         )}
         <span>{gate.name}</span>
-        {isInherited && (
-          <span className="font-mono-technical text-[8px] opacity-60">↑</span>
-        )}
+        {isInherited && <span className="font-mono-technical text-[8px] opacity-60">↑</span>}
       </button>
 
       {expanded && gate.pendingApprovalId && (
         <div className="absolute top-full left-0 mt-xs z-30 bg-surface border border-tertiary shadow-lg p-sm min-w-[200px] space-y-xs">
-          <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">GATE ACTION</p>
+          <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+            GATE ACTION
+          </p>
           <p className="font-body-bold text-body-bold text-on-surface text-[11px]">{gate.name}</p>
           {gate.approvedBy && (
             <p className="font-mono-technical text-[9px] text-primary">By {gate.approvedBy}</p>
@@ -199,11 +225,16 @@ function CaseCard({ c }: { c: OrchestrationCase }) {
             </Link>
             <div className="flex items-center gap-md mt-xs">
               {c.sourceEpicKey && (
-                <span className="font-mono-technical text-[10px] text-on-surface-variant">{c.sourceEpicKey}</span>
+                <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                  {c.sourceEpicKey}
+                </span>
               )}
               {c.sourceGovEpicKey && (
                 <span className="font-mono-technical text-[10px] text-primary">
-                  <span className="material-symbols-outlined" style={{ fontSize: 10 }}>sync</span> {c.sourceGovEpicKey}
+                  <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+                    sync
+                  </span>{" "}
+                  {c.sourceGovEpicKey}
                 </span>
               )}
               {c.triggerEval && (
@@ -220,7 +251,9 @@ function CaseCard({ c }: { c: OrchestrationCase }) {
                 {Math.round(c.riskScore.compositeScore * 100)}
               </p>
               <p className="font-mono-technical text-[9px] text-on-surface-variant">RISK SCORE</p>
-              <p className="font-mono-technical text-[9px] text-primary mt-xs">{c.riskScore.aiModeRecommended}</p>
+              <p className="font-mono-technical text-[9px] text-primary mt-xs">
+                {c.riskScore.aiModeRecommended}
+              </p>
             </div>
           )}
         </div>
@@ -266,18 +299,24 @@ function CaseCard({ c }: { c: OrchestrationCase }) {
       <div className="px-xl py-sm flex items-center gap-xl">
         <div className="flex items-center gap-md flex-1">
           <span className="font-mono-technical text-[9px] text-on-surface-variant flex items-center gap-xs">
-            <span className="material-symbols-outlined" style={{ fontSize: 10 }}>inventory_2</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+              inventory_2
+            </span>
             {c.evidenceCount} EVIDENCE
           </span>
           {c.waiverCount > 0 && (
             <span className="font-mono-technical text-[9px] text-tertiary flex items-center gap-xs">
-              <span className="material-symbols-outlined" style={{ fontSize: 10 }}>gavel</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+                gavel
+              </span>
               {c.waiverCount} WAIVER{c.waiverCount !== 1 ? "S" : ""}
             </span>
           )}
           {c.context?.aiSystemInvolved && (
             <span className="font-mono-technical text-[9px] text-primary flex items-center gap-xs">
-              <span className="material-symbols-outlined" style={{ fontSize: 10 }}>psychology</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
+                psychology
+              </span>
               AI SYSTEM
             </span>
           )}
@@ -315,7 +354,9 @@ function ConnectorHeader({
     github: "text-tertiary border-tertiary bg-tertiary/10",
     gitlab: "text-primary border-primary bg-primary/10",
   };
-  const color = connector ? typeColor[connector.type] ?? "text-on-surface border-border-muted" : "text-on-surface-variant border-border-muted";
+  const color = connector
+    ? (typeColor[connector.type] ?? "text-on-surface border-border-muted")
+    : "text-on-surface-variant border-border-muted";
 
   return (
     <button
@@ -323,12 +364,25 @@ function ConnectorHeader({
       className="w-full flex items-center gap-lg px-xl py-lg bg-surface border border-border-muted hover:bg-surface-container-low transition-colors text-left"
     >
       {connector ? (
-        <div className={`w-9 h-9 border flex items-center justify-center font-mono-technical text-[10px] shrink-0 ${color}`}>
-          {connector.type === "jira" ? "J" : connector.type === "github" ? "G" : connector.type === "gitlab" ? "GL" : "?"}
+        <div
+          className={`w-9 h-9 border flex items-center justify-center font-mono-technical text-[10px] shrink-0 ${color}`}
+        >
+          {connector.type === "jira"
+            ? "J"
+            : connector.type === "github"
+              ? "G"
+              : connector.type === "gitlab"
+                ? "GL"
+                : "?"}
         </div>
       ) : (
         <div className="w-9 h-9 border border-border-muted flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: 14 }}>link_off</span>
+          <span
+            className="material-symbols-outlined text-on-surface-variant"
+            style={{ fontSize: 14 }}
+          >
+            link_off
+          </span>
         </div>
       )}
 
@@ -344,31 +398,54 @@ function ConnectorHeader({
           )}
         </div>
         {connector?.baseUrl && (
-          <p className="font-mono-technical text-[10px] text-on-surface-variant truncate">{connector.baseUrl}</p>
+          <p className="font-mono-technical text-[10px] text-on-surface-variant truncate">
+            {connector.baseUrl}
+          </p>
         )}
       </div>
 
       <div className="flex items-center gap-xl shrink-0">
         <StatChip label="CASES" value={stats.total} />
-        {stats.enhanced > 0 && <StatChip label="ENHANCED" value={stats.enhanced} color="text-tertiary" />}
-        {stats.regulated > 0 && <StatChip label="REGULATED" value={stats.regulated} color="text-primary" />}
-        {stats.blocked > 0 && <StatChip label="BLOCKED" value={stats.blocked} color="text-critical" />}
-        {stats.pending > 0 && <StatChip label="PENDING" value={stats.pending} color="text-tertiary" />}
+        {stats.enhanced > 0 && (
+          <StatChip label="ENHANCED" value={stats.enhanced} color="text-tertiary" />
+        )}
+        {stats.regulated > 0 && (
+          <StatChip label="REGULATED" value={stats.regulated} color="text-primary" />
+        )}
+        {stats.blocked > 0 && (
+          <StatChip label="BLOCKED" value={stats.blocked} color="text-critical" />
+        )}
+        {stats.pending > 0 && (
+          <StatChip label="PENDING" value={stats.pending} color="text-tertiary" />
+        )}
         {stats.waivers > 0 && <StatChip label="WAIVERS" value={stats.waivers} />}
       </div>
 
-      <span className="material-symbols-outlined text-on-surface-variant ml-md" style={{ fontSize: 16 }}>
+      <span
+        className="material-symbols-outlined text-on-surface-variant ml-md"
+        style={{ fontSize: 16 }}
+      >
         {expanded ? "expand_less" : "expand_more"}
       </span>
     </button>
   );
 }
 
-function StatChip({ label, value, color = "text-on-surface-variant" }: { label: string; value: number; color?: string }) {
+function StatChip({
+  label,
+  value,
+  color = "text-on-surface-variant",
+}: {
+  label: string;
+  value: number;
+  color?: string;
+}) {
   return (
     <div className="text-center">
       <p className={`font-mono-technical text-[13px] font-bold ${color} leading-none`}>{value}</p>
-      <p className="font-mono-technical text-[8px] text-on-surface-variant tracking-widest">{label}</p>
+      <p className="font-mono-technical text-[8px] text-on-surface-variant tracking-widest">
+        {label}
+      </p>
     </div>
   );
 }
@@ -379,8 +456,12 @@ function ProgramStatsBar({ stats }: { stats: ProgramStats }) {
   return (
     <div className="bg-surface border border-border-muted px-xl py-lg flex items-center gap-xxl">
       <div>
-        <p className="font-mono-technical text-[22px] font-bold text-on-surface leading-none">{stats.totalCases}</p>
-        <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">TOTAL CASES</p>
+        <p className="font-mono-technical text-[22px] font-bold text-on-surface leading-none">
+          {stats.totalCases}
+        </p>
+        <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+          TOTAL CASES
+        </p>
       </div>
       <div className="h-8 w-px bg-border-muted" />
       <div className="flex items-center gap-xl flex-1">
@@ -392,14 +473,20 @@ function ProgramStatsBar({ stats }: { stats: ProgramStats }) {
           { label: "WAIVERS", value: stats.waivers, color: "text-on-surface-variant" },
         ].map((s) => (
           <div key={s.label} className="text-center">
-            <p className={`font-mono-technical text-[18px] font-bold ${s.color} leading-none`}>{s.value}</p>
-            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">{s.label}</p>
+            <p className={`font-mono-technical text-[18px] font-bold ${s.color} leading-none`}>
+              {s.value}
+            </p>
+            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+              {s.label}
+            </p>
           </div>
         ))}
       </div>
       <div className="text-right">
         <p className="font-mono-technical text-[10px] text-on-surface-variant">AI MODE</p>
-        <p className="font-mono-technical text-[12px] text-primary font-bold">{stats.aiMode.replace(/_/g, " ")}</p>
+        <p className="font-mono-technical text-[12px] text-primary font-bold">
+          {stats.aiMode.replace(/_/g, " ")}
+        </p>
       </div>
     </div>
   );
@@ -478,7 +565,8 @@ export default function OrchestrationClient({
   }
 
   const filterCounts = {
-    blocked: allCases.filter((c) => c.gates.some((g) => g.status === "REJECTED" && !g.skipped)).length,
+    blocked: allCases.filter((c) => c.gates.some((g) => g.status === "REJECTED" && !g.skipped))
+      .length,
     pending: allCases.filter((c) => c.gates.some((g) => g.pendingApprovalId && !g.skipped)).length,
     enhanced: allCases.filter((c) => c.riskScore?.intensity === "enhanced").length,
     regulated: allCases.filter((c) => c.riskScore?.intensity === "regulated").length,
@@ -489,8 +577,12 @@ export default function OrchestrationClient({
       {/* header */}
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Governance Orchestration</h1>
-          <span className="font-mono-technical text-[11px] text-on-surface-variant">{projectName}</span>
+          <h1 className="font-headline-md text-headline-md text-on-surface">
+            Governance Orchestration
+          </h1>
+          <span className="font-mono-technical text-[11px] text-on-surface-variant">
+            {projectName}
+          </span>
         </div>
 
         <div className="flex items-center gap-md">
@@ -499,7 +591,9 @@ export default function OrchestrationClient({
             <button
               onClick={() => setMode("project")}
               className={`px-lg py-xs font-mono-technical text-[10px] transition-colors ${
-                mode === "project" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"
+                mode === "project"
+                  ? "bg-primary text-on-primary"
+                  : "text-on-surface-variant hover:text-on-surface"
               }`}
             >
               PROJECT
@@ -507,7 +601,9 @@ export default function OrchestrationClient({
             <button
               onClick={() => setMode("program")}
               className={`px-lg py-xs font-mono-technical text-[10px] transition-colors ${
-                mode === "program" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"
+                mode === "program"
+                  ? "bg-primary text-on-primary"
+                  : "text-on-surface-variant hover:text-on-surface"
               }`}
             >
               PROGRAM
@@ -527,17 +623,26 @@ export default function OrchestrationClient({
           <FilterBar active={filter} onChange={setFilter} counts={filterCounts} />
           <div className="flex-1" />
           <p className="font-mono-technical text-[10px] text-on-surface-variant">
-            {allCases.filter(filterCase).length} CASES · {groups.length} SOURCE{groups.length !== 1 ? "S" : ""}
+            {allCases.filter(filterCase).length} CASES · {groups.length} SOURCE
+            {groups.length !== 1 ? "S" : ""}
           </p>
         </div>
 
         {allCases.length === 0 ? (
           <div className="px-xl pb-xl">
             <div className="bg-surface border border-border-muted p-xl text-center space-y-md">
-              <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: 32 }}>account_tree</span>
-              <p className="font-body-bold text-body-bold text-on-surface">No governance cases yet</p>
+              <span
+                className="material-symbols-outlined text-on-surface-variant"
+                style={{ fontSize: 32 }}
+              >
+                account_tree
+              </span>
+              <p className="font-body-bold text-body-bold text-on-surface">
+                No governance cases yet
+              </p>
               <p className="font-mono-technical text-[11px] text-on-surface-variant">
-                Cases are created when a Jira Portfolio Epic, GitHub PR, or GitLab MR matches a configured trigger rule.
+                Cases are created when a Jira Portfolio Epic, GitHub PR, or GitLab MR matches a
+                configured trigger rule.
               </p>
             </div>
           </div>
@@ -558,7 +663,9 @@ export default function OrchestrationClient({
                     }`}
                   >
                     {g.connector?.name ?? "Unlinked"}
-                    <span className="font-mono-technical text-[9px] opacity-70">{g.stats.total}</span>
+                    <span className="font-mono-technical text-[9px] opacity-70">
+                      {g.stats.total}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -571,7 +678,9 @@ export default function OrchestrationClient({
 
             {(groups[selectedConnectorIdx]?.cases ?? []).filter(filterCase).length === 0 && (
               <div className="bg-surface border border-border-muted p-xl text-center">
-                <p className="font-mono-technical text-[11px] text-on-surface-variant">No cases match the current filter.</p>
+                <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                  No cases match the current filter.
+                </p>
               </div>
             )}
           </div>
@@ -601,7 +710,9 @@ export default function OrchestrationClient({
                     <div className="divide-y divide-border-muted">
                       {visibleCases.length === 0 ? (
                         <div className="px-xl py-lg text-center">
-                          <p className="font-mono-technical text-[10px] text-on-surface-variant">No cases match the current filter.</p>
+                          <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                            No cases match the current filter.
+                          </p>
                         </div>
                       ) : (
                         visibleCases.map((c) => (
@@ -622,7 +733,8 @@ export default function OrchestrationClient({
       {/* footer */}
       <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center px-xl font-mono-technical text-[10px] text-on-surface-variant shrink-0">
         <span>
-          ORCHESTRATION ENGINE: ACTIVE · {allCases.length} CASES · AI MODE: {programStats.aiMode.replace(/_/g, " ")}
+          ORCHESTRATION ENGINE: ACTIVE · {allCases.length} CASES · AI MODE:{" "}
+          {programStats.aiMode.replace(/_/g, " ")}
         </span>
       </footer>
     </>

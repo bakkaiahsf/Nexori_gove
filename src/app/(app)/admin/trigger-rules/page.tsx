@@ -52,7 +52,9 @@ export default async function TriggerRulesPage() {
     <>
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Governance Trigger Rules</h1>
+          <h1 className="font-headline-md text-headline-md text-on-surface">
+            Governance Trigger Rules
+          </h1>
           <span className="font-body-base text-body-base text-on-surface-variant">
             {project.name} · Configure which tool events activate governance
           </span>

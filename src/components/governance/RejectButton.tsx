@@ -48,9 +48,13 @@ export default function RejectButton({ approvalId }: { approvalId: string }) {
                     reason: reason.trim(),
                   }),
                 });
-                if (res.ok) { setState("done"); router.refresh(); }
-                else setState("idle");
-              } catch { setState("idle"); }
+                if (res.ok) {
+                  setState("done");
+                  router.refresh();
+                } else setState("idle");
+              } catch {
+                setState("idle");
+              }
             }}
             disabled={!reason.trim()}
             className="flex-1 bg-critical text-on-error font-label-caps text-label-caps py-xs hover:brightness-110 disabled:opacity-40"

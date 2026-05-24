@@ -52,7 +52,9 @@ export function mapMRToEpicData(
     labels.some((l) => /infra|terraform|k8s|kubernetes|docker/i.test(l)) ||
     filenames.some((f) => /terraform|\.tf|k8s|kubernetes|dockerfile|docker-compose/i.test(f));
 
-  const dataClassification = labels.find((l) => /personal|financial|confidential|restricted/i.test(l));
+  const dataClassification = labels.find((l) =>
+    /personal|financial|confidential|restricted/i.test(l)
+  );
   const regulatoryDomain = labels.find((l) => /dora|eu-ai-act|soc2|iso-27001|pci|gdpr/i.test(l));
 
   const isProduction = mr.target_branch === "main" || mr.target_branch === "master";
@@ -174,10 +176,7 @@ export function buildGitLabConnector(opts: GitLabConnectorOptions): GitLabConnec
  * Verify GitLab webhook token (header: X-Gitlab-Token).
  * GitLab sends a shared secret string, not an HMAC.
  */
-export function verifyGitLabWebhookToken(
-  header: string,
-  expectedSecret: string
-): boolean {
+export function verifyGitLabWebhookToken(header: string, expectedSecret: string): boolean {
   const a = Buffer.from(header, "utf-8");
   const b = Buffer.from(expectedSecret, "utf-8");
   if (a.length !== b.length) return false;

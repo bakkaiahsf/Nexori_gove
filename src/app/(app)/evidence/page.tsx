@@ -91,11 +91,22 @@ export default async function Evidence() {
               { label: "TOTAL ITEMS", value: items.length, cls: "text-on-surface" },
               { label: "REG MAPPED", value: totalMapped, cls: "text-primary" },
               { label: "VERIFIED", value: verified, cls: "text-primary" },
-              { label: "UNMAPPED", value: items.length - totalMapped, cls: items.length - totalMapped > 0 ? "text-tertiary" : "text-primary" },
+              {
+                label: "UNMAPPED",
+                value: items.length - totalMapped,
+                cls: items.length - totalMapped > 0 ? "text-tertiary" : "text-primary",
+              },
             ].map(({ label, value, cls }) => (
               <div key={label} className="bg-surface border border-border-muted p-lg">
-                <p className="font-mono-technical text-[10px] text-on-surface-variant mb-xs">{label}</p>
-                <p className={`font-display-lg text-display-lg font-bold ${cls}`} style={{ fontSize: 36 }}>{value}</p>
+                <p className="font-mono-technical text-[10px] text-on-surface-variant mb-xs">
+                  {label}
+                </p>
+                <p
+                  className={`font-display-lg text-display-lg font-bold ${cls}`}
+                  style={{ fontSize: 36 }}
+                >
+                  {value}
+                </p>
               </div>
             ))}
           </div>
@@ -119,9 +130,15 @@ export default async function Evidence() {
             ) : (
               <div className="divide-y divide-border-muted">
                 {items.map((item) => {
-                  const typeMeta = TYPE_META[item.type] ?? { label: item.type, icon: "description" };
+                  const typeMeta = TYPE_META[item.type] ?? {
+                    label: item.type,
+                    icon: "description",
+                  };
                   return (
-                    <div key={item.id} className="p-xl hover:bg-surface-container-high transition-colors">
+                    <div
+                      key={item.id}
+                      className="p-xl hover:bg-surface-container-high transition-colors"
+                    >
                       <div className="flex items-start gap-lg">
                         <div className="w-8 h-8 bg-surface-container-high border border-border-muted flex items-center justify-center shrink-0 mt-0.5">
                           <Icon name={typeMeta.icon} size={16} />
@@ -195,7 +212,9 @@ export default async function Evidence() {
             <span className="w-2 h-2 rounded-full bg-primary" />
             <span>EVIDENCE_VAULT: LOCKED · APPEND-ONLY</span>
           </div>
-          <span>ITEMS: {items.length} · MAPPINGS: {items.flatMap((i) => i.regulatoryMappings).length}</span>
+          <span>
+            ITEMS: {items.length} · MAPPINGS: {items.flatMap((i) => i.regulatoryMappings).length}
+          </span>
         </div>
         <span className="font-bold text-on-surface">v0.1.0-MVP</span>
       </footer>

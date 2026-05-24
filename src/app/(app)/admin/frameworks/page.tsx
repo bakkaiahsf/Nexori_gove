@@ -25,8 +25,14 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
     region: "EU",
     sectors: ["Banking", "Insurance", "Investment Firms", "Fintech", "Payment Services"],
     mandatoryFor: ["EU Financial Services", "EU Insurance", "EU Fintech"],
-    description: "Mandatory for EU financial sector. Covers ICT risk management, incident reporting, third-party oversight, and operational resilience testing.",
-    agileControls: ["Deployment gate checks", "ICT change management gates", "Third-party onboarding review", "Incident classification triggers"],
+    description:
+      "Mandatory for EU financial sector. Covers ICT risk management, incident reporting, third-party oversight, and operational resilience testing.",
+    agileControls: [
+      "Deployment gate checks",
+      "ICT change management gates",
+      "Third-party onboarding review",
+      "Incident classification triggers",
+    ],
     controlCount: 0,
   },
   {
@@ -34,10 +40,21 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
     label: "EU AI Act",
     full: "EU Artificial Intelligence Act",
     region: "EU",
-    sectors: ["All sectors with AI systems", "Financial Services", "Healthcare", "Critical Infrastructure"],
+    sectors: [
+      "All sectors with AI systems",
+      "Financial Services",
+      "Healthcare",
+      "Critical Infrastructure",
+    ],
     mandatoryFor: ["Any organisation deploying AI in the EU market"],
-    description: "Risk-based framework for AI systems deployed in the EU. Prohibits high-risk uses. Mandates transparency, human oversight, and audit trails for AI decisions.",
-    agileControls: ["AI deployment governance gates", "Model risk assessment", "AI usage event logging", "Human-in-the-loop enforcement"],
+    description:
+      "Risk-based framework for AI systems deployed in the EU. Prohibits high-risk uses. Mandates transparency, human oversight, and audit trails for AI decisions.",
+    agileControls: [
+      "AI deployment governance gates",
+      "Model risk assessment",
+      "AI usage event logging",
+      "Human-in-the-loop enforcement",
+    ],
     controlCount: 0,
   },
   {
@@ -47,8 +64,14 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
     region: "US / Global",
     sectors: ["SaaS", "Cloud Services", "Technology", "Data Processing"],
     mandatoryFor: ["US SaaS companies", "Cloud service providers serving US customers"],
-    description: "Trust Services Criteria covering Security, Availability, Processing Integrity, Confidentiality, and Privacy. Common requirement for B2B SaaS.",
-    agileControls: ["Change management approval gates", "Access review checkpoints", "Incident response gates", "Vendor assessment gates"],
+    description:
+      "Trust Services Criteria covering Security, Availability, Processing Integrity, Confidentiality, and Privacy. Common requirement for B2B SaaS.",
+    agileControls: [
+      "Change management approval gates",
+      "Access review checkpoints",
+      "Incident response gates",
+      "Vendor assessment gates",
+    ],
     controlCount: 0,
   },
   {
@@ -58,8 +81,14 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
     region: "Global",
     sectors: ["All industries", "Financial Services", "Healthcare", "Government", "Technology"],
     mandatoryFor: ["Enterprises requiring international information security certification"],
-    description: "International standard for Information Security Management Systems (ISMS). Covers risk assessment, controls, and continual improvement across 93 controls.",
-    agileControls: ["Security review gates", "Risk assessment checkpoints", "Change management gates", "Supplier security gates"],
+    description:
+      "International standard for Information Security Management Systems (ISMS). Covers risk assessment, controls, and continual improvement across 93 controls.",
+    agileControls: [
+      "Security review gates",
+      "Risk assessment checkpoints",
+      "Change management gates",
+      "Supplier security gates",
+    ],
     controlCount: 0,
   },
   {
@@ -69,8 +98,14 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
     region: "Global",
     sectors: ["Payment Processing", "Retail", "Banking", "Fintech", "E-commerce"],
     mandatoryFor: ["Any organisation storing, processing, or transmitting cardholder data"],
-    description: "Security standard for organisations handling credit card data. 12 high-level requirements covering network security, access controls, monitoring, and testing.",
-    agileControls: ["Code review gates for payment flows", "Penetration test sign-off", "Network change approval", "Encryption compliance gates"],
+    description:
+      "Security standard for organisations handling credit card data. 12 high-level requirements covering network security, access controls, monitoring, and testing.",
+    agileControls: [
+      "Code review gates for payment flows",
+      "Penetration test sign-off",
+      "Network change approval",
+      "Encryption compliance gates",
+    ],
     controlCount: 0,
   },
   {
@@ -80,8 +115,14 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
     region: "EU / UK",
     sectors: ["All industries processing EU/UK personal data"],
     mandatoryFor: ["Any organisation processing personal data of EU/UK residents"],
-    description: "Data protection regulation requiring lawful processing, data minimisation, rights of individuals, breach notification within 72 hours, and DPO appointment where required.",
-    agileControls: ["Data processing assessment gates", "DPO review gates", "Privacy-by-design checkpoints", "Breach response triggers"],
+    description:
+      "Data protection regulation requiring lawful processing, data minimisation, rights of individuals, breach notification within 72 hours, and DPO appointment where required.",
+    agileControls: [
+      "Data processing assessment gates",
+      "DPO review gates",
+      "Privacy-by-design checkpoints",
+      "Breach response triggers",
+    ],
     controlCount: 0,
   },
 ];
@@ -127,13 +168,16 @@ export default async function FrameworksPage() {
     <>
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Compliance Frameworks</h1>
+          <h1 className="font-headline-md text-headline-md text-on-surface">
+            Compliance Frameworks
+          </h1>
           <span className="font-body-base text-body-base text-on-surface-variant">
             {project.name} · Select what governance applies to this project
           </span>
         </div>
         <span className="font-mono-technical text-[10px] text-on-surface-variant">
-          {controlCounts.length} ACTIVE · {FRAMEWORK_LIBRARY.length - controlCounts.length} AVAILABLE
+          {controlCounts.length} ACTIVE · {FRAMEWORK_LIBRARY.length - controlCounts.length}{" "}
+          AVAILABLE
         </span>
       </header>
 

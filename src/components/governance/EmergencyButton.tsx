@@ -64,7 +64,11 @@ export default function EmergencyButton({ isLocked }: { isLocked: boolean }) {
             : "bg-critical text-on-error"
       }`}
     >
-      {state === "loading" ? "ENGAGING..." : state === "done" ? "LOCK ENGAGED" : "Initiate Shutdown"}
+      {state === "loading"
+        ? "ENGAGING..."
+        : state === "done"
+          ? "LOCK ENGAGED"
+          : "Initiate Shutdown"}
     </button>
   );
 }

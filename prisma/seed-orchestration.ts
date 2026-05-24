@@ -25,17 +25,19 @@ async function main() {
     where: { name: "NexoriBank Jira" },
   });
 
-  const connector = existingConnector ?? (await prisma.sourceConnector.create({
-    data: {
-      type: "jira",
-      name: "NexoriBank Jira",
-      baseUrl: "https://nexoribank.atlassian.net",
-      credentials: { email: "governance@nexoribank.com", apiToken: "DEMO_TOKEN" },
-      webhookSecret: "demo-webhook-secret-nexori",
-      projectKeys: ["BANK", "CARDS", "INFRA"],
-      enabled: true,
-    },
-  }));
+  const connector =
+    existingConnector ??
+    (await prisma.sourceConnector.create({
+      data: {
+        type: "jira",
+        name: "NexoriBank Jira",
+        baseUrl: "https://nexoribank.atlassian.net",
+        credentials: { email: "governance@nexoribank.com", apiToken: "DEMO_TOKEN" },
+        webhookSecret: "demo-webhook-secret-nexori",
+        projectKeys: ["BANK", "CARDS", "INFRA"],
+        enabled: true,
+      },
+    }));
   console.log(`  ✓ SourceConnector: ${connector.id}`);
 
   // ── 2. GitHub Connector ────────────────────────────────────────────────────
@@ -43,28 +45,33 @@ async function main() {
     where: { name: "NexoriBank GitHub" },
   });
 
-  const ghConnector = existingGH ?? (await prisma.sourceConnector.create({
-    data: {
-      type: "github",
-      name: "NexoriBank GitHub",
-      baseUrl: "https://api.github.com",
-      credentials: { token: "DEMO_GITHUB_TOKEN" },
-      webhookSecret: "demo-github-webhook-secret",
-      projectKeys: ["nexoribank"],
-      enabled: true,
-    },
-  }));
+  const ghConnector =
+    existingGH ??
+    (await prisma.sourceConnector.create({
+      data: {
+        type: "github",
+        name: "NexoriBank GitHub",
+        baseUrl: "https://api.github.com",
+        credentials: { token: "DEMO_GITHUB_TOKEN" },
+        webhookSecret: "demo-github-webhook-secret",
+        projectKeys: ["nexoribank"],
+        enabled: true,
+      },
+    }));
   console.log(`  ✓ GitHubConnector: ${ghConnector.id}`);
 
   // ── 3. Trigger Rules ───────────────────────────────────────────────────────
-  const existingRules = await prisma.governanceTriggerRule.count({ where: { projectId: project.id } });
+  const existingRules = await prisma.governanceTriggerRule.count({
+    where: { projectId: project.id },
+  });
   if (existingRules === 0) {
     await prisma.governanceTriggerRule.createMany({
       data: [
         {
           projectId: project.id,
           name: "Portfolio Epics → Full Pipeline",
-          description: "Any Jira Portfolio Epic triggers full governance: context enrichment, risk scoring, adaptive gate pipeline.",
+          description:
+            "Any Jira Portfolio Epic triggers full governance: context enrichment, risk scoring, adaptive gate pipeline.",
           source: "jira",
           eventType: "epic.created",
           conditions: [{ field: "issueType", op: "eq", value: "Portfolio Epic" }],
@@ -76,7 +83,8 @@ async function main() {
         {
           projectId: project.id,
           name: "PR to main (AI files) → Full Pipeline",
-          description: "Pull requests targeting main with AI-related file changes require full governance review.",
+          description:
+            "Pull requests targeting main with AI-related file changes require full governance review.",
           source: "github",
           eventType: "pr.opened",
           conditions: [
@@ -149,7 +157,8 @@ async function main() {
       sourceGovEpicKey: "BANK-GOV-2401",
       context: {
         epicTitle: "Q4 Core Banking Change — Vector Scale Adjustment",
-        epicDescription: "Adjust the vector scale algorithm in the core lending engine for Q4 delivery.",
+        epicDescription:
+          "Adjust the vector scale algorithm in the core lending engine for Q4 delivery.",
         sourceKey: "BANK-2401",
         sourceType: "epic",
         labels: ["q4-delivery", "lending-engine", "production"],
@@ -166,14 +175,14 @@ async function main() {
       },
       riskScore: {
         productionImpact: 0.75,
-        customerImpact: 0.60,
+        customerImpact: 0.6,
         aiInvolvement: 0.05,
-        dataExposure: 0.50,
-        infraImpact: 0.30,
+        dataExposure: 0.5,
+        infraImpact: 0.3,
         regulatoryExp: 0.65,
-        incidentHistory: 0.40,
-        thirdPartyRisk: 0.10,
-        deploymentCrit: 0.70,
+        incidentHistory: 0.4,
+        thirdPartyRisk: 0.1,
+        deploymentCrit: 0.7,
         securitySens: 0.45,
         blastRadius: 0.55,
         compositeScore: 62,
@@ -185,12 +194,24 @@ async function main() {
       },
       pipeline: {
         gatesIncluded: [
-          { slug: "security-signoff", order: 1, reason: "Production change in regulated component" },
-          { slug: "cab-approval", order: 2, reason: "Change Advisory Board required for lending engine" },
+          {
+            slug: "security-signoff",
+            order: 1,
+            reason: "Production change in regulated component",
+          },
+          {
+            slug: "cab-approval",
+            order: 2,
+            reason: "Change Advisory Board required for lending engine",
+          },
         ],
         gatesSkipped: [
           { slug: "ai-risk-assessment", skipReason: "AI system not involved", conditionMet: true },
-          { slug: "dpo-review", skipReason: "No personal data classification change", conditionMet: true },
+          {
+            slug: "dpo-review",
+            skipReason: "No personal data classification change",
+            conditionMet: true,
+          },
         ],
         inheritedApprovals: [],
         totalGateCount: 2,
@@ -202,7 +223,11 @@ async function main() {
         eventKey: "BANK-2401",
         matched: true,
         action: TriggerAction.FULL_PIPELINE,
-        payload: { issueType: "Portfolio Epic", project: "BANK", summary: "Q4 Core Banking Change" },
+        payload: {
+          issueType: "Portfolio Epic",
+          project: "BANK",
+          summary: "Q4 Core Banking Change",
+        },
       },
     },
     {
@@ -211,7 +236,8 @@ async function main() {
       sourceGovEpicKey: "BANK-GOV-2415",
       context: {
         epicTitle: "AI Model Validation — NEXORI-LR v3.1 EU Deployment",
-        epicDescription: "EU AI Act compliance validation for NEXORI large-reasoning model production deployment.",
+        epicDescription:
+          "EU AI Act compliance validation for NEXORI large-reasoning model production deployment.",
         sourceKey: "BANK-2415",
         sourceType: "epic",
         labels: ["eu-ai-act", "ai-governance", "model-deployment", "high-risk"],
@@ -227,17 +253,17 @@ async function main() {
           "EU AI Act high-risk AI system deployment. NEXORI-LR model requires Article 9 risk management, bias/drift review, and human oversight confirmation before production. Two gates: AI Risk Assessment (approved) and Model Deployment Approval (pending).",
       },
       riskScore: {
-        productionImpact: 0.80,
+        productionImpact: 0.8,
         customerImpact: 0.75,
         aiInvolvement: 0.95,
-        dataExposure: 0.70,
-        infraImpact: 0.40,
-        regulatoryExp: 0.90,
+        dataExposure: 0.7,
+        infraImpact: 0.4,
+        regulatoryExp: 0.9,
         incidentHistory: 0.05,
-        thirdPartyRisk: 0.20,
+        thirdPartyRisk: 0.2,
         deploymentCrit: 0.85,
-        securitySens: 0.60,
-        blastRadius: 0.70,
+        securitySens: 0.6,
+        blastRadius: 0.7,
         compositeScore: 81,
         intensity: "enhanced",
         scoringConfidence: 0.93,
@@ -247,12 +273,28 @@ async function main() {
       },
       pipeline: {
         gatesIncluded: [
-          { slug: "ai-risk-assessment", order: 1, reason: "EU AI Act Article 9 — mandatory for AI system" },
-          { slug: "model-deployment-approval", order: 2, reason: "Human oversight required for AI Act compliance" },
-          { slug: "dpo-review", order: 3, reason: "Confidential data classification — DPO sign-off required" },
+          {
+            slug: "ai-risk-assessment",
+            order: 1,
+            reason: "EU AI Act Article 9 — mandatory for AI system",
+          },
+          {
+            slug: "model-deployment-approval",
+            order: 2,
+            reason: "Human oversight required for AI Act compliance",
+          },
+          {
+            slug: "dpo-review",
+            order: 3,
+            reason: "Confidential data classification — DPO sign-off required",
+          },
         ],
         gatesSkipped: [
-          { slug: "expedited-review", skipReason: "Enhanced intensity — expedited path not available", conditionMet: true },
+          {
+            slug: "expedited-review",
+            skipReason: "Enhanced intensity — expedited path not available",
+            conditionMet: true,
+          },
         ],
         inheritedApprovals: [],
         totalGateCount: 3,
@@ -264,7 +306,11 @@ async function main() {
         eventKey: "BANK-2415",
         matched: true,
         action: TriggerAction.FULL_PIPELINE,
-        payload: { issueType: "Portfolio Epic", labels: ["eu-ai-act", "high-risk"], project: "BANK" },
+        payload: {
+          issueType: "Portfolio Epic",
+          labels: ["eu-ai-act", "high-risk"],
+          project: "BANK",
+        },
       },
     },
     {
@@ -273,7 +319,8 @@ async function main() {
       sourceGovEpicKey: "BANK-GOV-2420",
       context: {
         epicTitle: "Third-Party Risk Assessment — AWS Infrastructure Onboarding",
-        epicDescription: "DORA Article 28 third-party ICT risk review for expanded AWS infrastructure dependency.",
+        epicDescription:
+          "DORA Article 28 third-party ICT risk review for expanded AWS infrastructure dependency.",
         sourceKey: "BANK-2420",
         sourceType: "epic",
         labels: ["dora-art28", "third-party", "aws", "infrastructure"],
@@ -294,12 +341,12 @@ async function main() {
         aiInvolvement: 0.05,
         dataExposure: 0.65,
         infraImpact: 0.85,
-        regulatoryExp: 0.80,
+        regulatoryExp: 0.8,
         incidentHistory: 0.05,
-        thirdPartyRisk: 0.90,
-        deploymentCrit: 0.60,
+        thirdPartyRisk: 0.9,
+        deploymentCrit: 0.6,
         securitySens: 0.55,
-        blastRadius: 0.70,
+        blastRadius: 0.7,
         compositeScore: 71,
         intensity: "enhanced",
         scoringConfidence: 0.89,
@@ -309,9 +356,21 @@ async function main() {
       },
       pipeline: {
         gatesIncluded: [
-          { slug: "dora-third-party-review", order: 1, reason: "DORA Article 28 mandatory for critical ICT provider" },
-          { slug: "legal-signoff", order: 2, reason: "DPA amendment required for data processing change" },
-          { slug: "security-signoff", order: 3, reason: "Infrastructure change in production environment" },
+          {
+            slug: "dora-third-party-review",
+            order: 1,
+            reason: "DORA Article 28 mandatory for critical ICT provider",
+          },
+          {
+            slug: "legal-signoff",
+            order: 2,
+            reason: "DPA amendment required for data processing change",
+          },
+          {
+            slug: "security-signoff",
+            order: 3,
+            reason: "Infrastructure change in production environment",
+          },
         ],
         gatesSkipped: [
           { slug: "ai-risk-assessment", skipReason: "No AI system involved", conditionMet: true },
@@ -326,7 +385,11 @@ async function main() {
         eventKey: "BANK-2420",
         matched: true,
         action: TriggerAction.FULL_PIPELINE,
-        payload: { issueType: "Portfolio Epic", components: ["infrastructure"], labels: ["dora-art28"] },
+        payload: {
+          issueType: "Portfolio Epic",
+          components: ["infrastructure"],
+          labels: ["dora-art28"],
+        },
       },
     },
   ];
@@ -370,7 +433,9 @@ async function main() {
 
     // Adaptive pipeline
     if (!govCase.adaptivePipeline) {
-      const riskScore = await prisma.governanceRiskScore.findUnique({ where: { caseId: govCase.id } });
+      const riskScore = await prisma.governanceRiskScore.findUnique({
+        where: { caseId: govCase.id },
+      });
       if (riskScore) {
         await prisma.adaptivePipeline.create({
           data: {
@@ -421,7 +486,8 @@ async function main() {
       data: {
         projectId: project.id,
         title: "Payment API Refactor — PR #247 to main",
-        description: "GitHub PR refactoring the payment processing API with 68 file changes including AI scoring module.",
+        description:
+          "GitHub PR refactoring the payment processing API with 68 file changes including AI scoring module.",
         phase: "code-review",
         status: "active",
         sourceEpicKey: "nexoribank/core-api#247",
@@ -455,16 +521,16 @@ async function main() {
     const ghRiskScore = await prisma.governanceRiskScore.create({
       data: {
         caseId: newCase.id,
-        productionImpact: 0.70,
-        customerImpact: 0.80,
-        aiInvolvement: 0.60,
+        productionImpact: 0.7,
+        customerImpact: 0.8,
+        aiInvolvement: 0.6,
         dataExposure: 0.75,
-        infraImpact: 0.30,
+        infraImpact: 0.3,
         regulatoryExp: 0.75,
         incidentHistory: 0.05,
-        thirdPartyRisk: 0.10,
-        deploymentCrit: 0.80,
-        securitySens: 0.70,
+        thirdPartyRisk: 0.1,
+        deploymentCrit: 0.8,
+        securitySens: 0.7,
         blastRadius: 0.65,
         compositeScore: 74,
         intensity: "enhanced",
@@ -480,12 +546,24 @@ async function main() {
         caseId: newCase.id,
         riskScoreId: ghRiskScore.id,
         gatesIncluded: [
-          { slug: "security-signoff", order: 1, reason: "Payment API with financial data — mandatory" },
-          { slug: "ai-risk-assessment", order: 2, reason: "AI scoring module detected in changed files" },
+          {
+            slug: "security-signoff",
+            order: 1,
+            reason: "Payment API with financial data — mandatory",
+          },
+          {
+            slug: "ai-risk-assessment",
+            order: 2,
+            reason: "AI scoring module detected in changed files",
+          },
           { slug: "cab-approval", order: 3, reason: "68-file change to production payment API" },
         ],
         gatesSkipped: [
-          { slug: "dora-third-party-review", skipReason: "No third-party ICT provider change", conditionMet: true },
+          {
+            slug: "dora-third-party-review",
+            skipReason: "No third-party ICT provider change",
+            conditionMet: true,
+          },
         ],
         inheritedApprovals: [],
         totalGateCount: 3,
@@ -562,7 +640,12 @@ async function main() {
         matched: true,
         action: TriggerAction.FULL_PIPELINE,
         caseId: newCase.id,
-        payload: { prNumber: 247, repo: "nexoribank/core-api", targetBranch: "main", filesChanged: 68 },
+        payload: {
+          prNumber: 247,
+          repo: "nexoribank/core-api",
+          targetBranch: "main",
+          filesChanged: 68,
+        },
       },
     });
 
@@ -576,5 +659,8 @@ async function main() {
 }
 
 main()
-  .catch((e) => { console.error("Seed failed:", e); process.exit(1); })
+  .catch((e) => {
+    console.error("Seed failed:", e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

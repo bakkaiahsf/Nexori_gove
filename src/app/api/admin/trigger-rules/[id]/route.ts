@@ -3,9 +3,17 @@ import prisma from "@/lib/db";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-  const { enabled, priority, name } = body as { enabled?: boolean; priority?: number; name?: string };
+  const { enabled, priority, name } = body as {
+    enabled?: boolean;
+    priority?: number;
+    name?: string;
+  };
 
   const rule = await prisma.governanceTriggerRule.update({
     where: { id: params.id },

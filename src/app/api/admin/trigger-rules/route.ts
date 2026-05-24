@@ -29,10 +29,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   const parsed = CreateRuleSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Validation failed", issues: parsed.error.issues }, { status: 400 });
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.issues },
+      { status: 400 }
+    );
 
   const rule = await prisma.governanceTriggerRule.create({
     data: {

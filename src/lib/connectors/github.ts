@@ -55,11 +55,11 @@ export function mapPRToEpicData(
     labels.some((l) => /infra|infrastructure|terraform|k8s|kubernetes|docker/i.test(l)) ||
     filenames.some((f) => /terraform|\.tf|k8s|kubernetes|dockerfile|docker-compose/i.test(f));
 
-  const dataClassification = labels.find((l) => /personal|financial|confidential|restricted/i.test(l));
-
-  const regulatoryDomain = labels.find((l) =>
-    /dora|eu-ai-act|soc2|iso-27001|pci|gdpr/i.test(l)
+  const dataClassification = labels.find((l) =>
+    /personal|financial|confidential|restricted/i.test(l)
   );
+
+  const regulatoryDomain = labels.find((l) => /dora|eu-ai-act|soc2|iso-27001|pci|gdpr/i.test(l));
 
   return {
     key: `${repo}#${pr.number}`,
@@ -178,10 +178,7 @@ export function verifyGitHubWebhookSignature(
   secret: string
 ): boolean {
   if (!signatureHeader.startsWith("sha256=")) return false;
-  const expected = Buffer.from(
-    createHmac("sha256", secret).update(body).digest("hex"),
-    "utf-8"
-  );
+  const expected = Buffer.from(createHmac("sha256", secret).update(body).digest("hex"), "utf-8");
   const actual = Buffer.from(signatureHeader.slice(7), "utf-8");
   if (expected.length !== actual.length) return false;
   return timingSafeEqual(expected, actual);

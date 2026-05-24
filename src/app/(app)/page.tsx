@@ -124,7 +124,12 @@ export default async function CommandCenter() {
           </div>
           <div className="flex items-center gap-md">
             <div className="w-8 h-8 bg-primary/10 border border-primary flex items-center justify-center font-mono-technical text-[10px] text-primary">
-              {session?.user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "??"}
+              {session?.user?.name
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase() ?? "??"}
             </div>
             <div className="hidden lg:block">
               <p className="font-body-bold text-body-bold text-on-surface">

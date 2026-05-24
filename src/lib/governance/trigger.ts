@@ -46,12 +46,18 @@ function evaluateCondition(payload: Record<string, unknown>, condition: Conditio
       if (Array.isArray(actual)) {
         return actual.some((v) => String(v).toLowerCase().includes(String(expected).toLowerCase()));
       }
-      return String(actual ?? "").toLowerCase().includes(String(expected).toLowerCase());
+      return String(actual ?? "")
+        .toLowerCase()
+        .includes(String(expected).toLowerCase());
     case "not_contains":
       if (Array.isArray(actual)) {
-        return !actual.some((v) => String(v).toLowerCase().includes(String(expected).toLowerCase()));
+        return !actual.some((v) =>
+          String(v).toLowerCase().includes(String(expected).toLowerCase())
+        );
       }
-      return !String(actual ?? "").toLowerCase().includes(String(expected).toLowerCase());
+      return !String(actual ?? "")
+        .toLowerCase()
+        .includes(String(expected).toLowerCase());
     case "gt":
       return Number(actual) > Number(expected);
     case "lt":
@@ -127,9 +133,7 @@ export async function evaluateTriggerRules(ctx: TriggerContext): Promise<Trigger
   await prisma.governanceEvent.create({
     data: {
       projectId: ctx.projectId,
-      type: matched
-        ? GovernanceEventType.TRIGGER_MATCHED
-        : GovernanceEventType.TRIGGER_SKIPPED,
+      type: matched ? GovernanceEventType.TRIGGER_MATCHED : GovernanceEventType.TRIGGER_SKIPPED,
       resourceType: "trigger-evaluation",
       resourceId: evaluation.id,
       payload: {

@@ -20,19 +20,22 @@ export default async function AuditExport() {
     select: { id: true, name: true, key: true },
   });
 
-  const [eventsCount, evidenceCount, mappingsCount, risksCount, gatesCount, thirdPartyCount] = project
-    ? await Promise.all([
-        prisma.governanceEvent.count({ where: { projectId: project.id } }),
-        prisma.evidenceItem.count({ where: { projectId: project.id } }),
-        prisma.regulatoryMapping.count({ where: { projectId: project.id } }),
-        prisma.riskItem.count({ where: { projectId: project.id } }),
-        prisma.governanceGate.count({ where: { case: { projectId: project.id } } }),
-        prisma.thirdPartyDependency.count({ where: { projectId: project.id } }),
-      ])
-    : [0, 0, 0, 0, 0, 0];
+  const [eventsCount, evidenceCount, mappingsCount, risksCount, gatesCount, thirdPartyCount] =
+    project
+      ? await Promise.all([
+          prisma.governanceEvent.count({ where: { projectId: project.id } }),
+          prisma.evidenceItem.count({ where: { projectId: project.id } }),
+          prisma.regulatoryMapping.count({ where: { projectId: project.id } }),
+          prisma.riskItem.count({ where: { projectId: project.id } }),
+          prisma.governanceGate.count({ where: { case: { projectId: project.id } } }),
+          prisma.thirdPartyDependency.count({ where: { projectId: project.id } }),
+        ])
+      : [0, 0, 0, 0, 0, 0];
 
   const exportedAt = new Date().toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 
   const packs = [
@@ -65,9 +68,7 @@ export default async function AuditExport() {
         "Flat CSV export of all immutable governance events. Compatible with Excel, Splunk, and SIEM tools. Ideal for compliance teams doing control testing.",
       icon: "table_chart",
       href: "/api/audit-export?format=csv",
-      items: [
-        { label: "Governance Events", count: eventsCount },
-      ],
+      items: [{ label: "Governance Events", count: eventsCount }],
       frameworks: ["All frameworks"],
       cls: "border-border-muted",
       badge: "CSV",
@@ -109,7 +110,10 @@ export default async function AuditExport() {
                 </p>
                 <div className="flex gap-md mt-md flex-wrap">
                   {["DORA Art. 25", "EU AI Act Art. 11", "SOC2 CC6", "ISO 27001 A.8"].map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 font-mono-technical text-[10px] border border-primary text-primary bg-primary/5">
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 font-mono-technical text-[10px] border border-primary text-primary bg-primary/5"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -128,8 +132,12 @@ export default async function AuditExport() {
                   </div>
                   <div>
                     <div className="flex items-center gap-md mb-xs">
-                      <h3 className="font-body-bold text-body-bold text-on-surface">{pack.title}</h3>
-                      <span className={`px-2 py-0.5 font-mono-technical text-[10px] ${pack.badgeCls}`}>
+                      <h3 className="font-body-bold text-body-bold text-on-surface">
+                        {pack.title}
+                      </h3>
+                      <span
+                        className={`px-2 py-0.5 font-mono-technical text-[10px] ${pack.badgeCls}`}
+                      >
                         {pack.badge}
                       </span>
                     </div>
@@ -153,15 +161,23 @@ export default async function AuditExport() {
               <div className="p-xl">
                 <div className="grid grid-cols-3 gap-md mb-lg">
                   {pack.items.map(({ label, count }) => (
-                    <div key={label} className="bg-surface-container-low border border-border-muted p-md">
-                      <p className="font-mono-technical text-[10px] text-on-surface-variant">{label}</p>
+                    <div
+                      key={label}
+                      className="bg-surface-container-low border border-border-muted p-md"
+                    >
+                      <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                        {label}
+                      </p>
                       <p className="font-body-bold text-body-bold text-primary mt-xs">{count}</p>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-md flex-wrap">
                   {pack.frameworks.map((f) => (
-                    <span key={f} className="font-mono-technical text-[10px] text-on-surface-variant">
+                    <span
+                      key={f}
+                      className="font-mono-technical text-[10px] text-on-surface-variant"
+                    >
                       {f}
                     </span>
                   ))}

@@ -21,7 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json().catch(() => ({}));
-    const reason = typeof body.reason === "string" && body.reason.trim() ? body.reason.trim() : "Rejected via UI";
+    const reason =
+      typeof body.reason === "string" && body.reason.trim()
+        ? body.reason.trim()
+        : "Rejected via UI";
     const result = await rejectRequest(
       params.id,
       body.resolvedByEmail ?? "bakkaiahsf@gmail.com",

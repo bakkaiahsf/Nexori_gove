@@ -16,9 +16,20 @@ const INDUSTRIES = [
   "Manufacturing",
 ] as const;
 
-function Icon({ name, size = 18, className = "" }: { name: string; size?: number; className?: string }) {
+function Icon({
+  name,
+  size = 18,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  className?: string;
+}) {
   return (
-    <span className={`material-symbols-outlined select-none leading-none ${className}`} style={{ fontSize: size }}>
+    <span
+      className={`material-symbols-outlined select-none leading-none ${className}`}
+      style={{ fontSize: size }}
+    >
       {name}
     </span>
   );
@@ -55,7 +66,13 @@ type AIAdvisorResult = {
   agileNotes: string;
 };
 
-export default function FrameworkConfigClient({ projectId, projectName, frameworks, connectors, triggerRules }: Props) {
+export default function FrameworkConfigClient({
+  projectId,
+  projectName,
+  frameworks,
+  connectors,
+  triggerRules,
+}: Props) {
   const [selectedRegions, setSelectedRegions] = useState<string[]>(["EU"]);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("Banking & Financial Services");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -64,7 +81,7 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
   const [advisorError, setAdvisorError] = useState<string | null>(null);
 
   function toggleRegion(r: string) {
-    setSelectedRegions((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
+    setSelectedRegions((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
   }
 
   async function runAdvisor() {
@@ -119,7 +136,11 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           try {
-            const parsed = JSON.parse(line.slice(6)) as { chunk?: string; done?: boolean; error?: string };
+            const parsed = JSON.parse(line.slice(6)) as {
+              chunk?: string;
+              done?: boolean;
+              error?: string;
+            };
             if (parsed.error) throw new Error(parsed.error);
             if (parsed.chunk) fullText += parsed.chunk;
           } catch (e) {
@@ -130,7 +151,10 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
       }
 
       // Parse JSON — handle wrapped markdown code blocks
-      const jsonStr = fullText.replace(/^```json?\n?/i, "").replace(/\n?```$/i, "").trim();
+      const jsonStr = fullText
+        .replace(/^```json?\n?/i, "")
+        .replace(/\n?```$/i, "")
+        .trim();
       const parsed = JSON.parse(jsonStr) as AIAdvisorResult;
       setAdvisorResult(parsed);
     } catch {
@@ -145,7 +169,6 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
   return (
     <div className="p-xl">
       <div className="max-w-[1200px] mx-auto space-y-lg">
-
         {/* ── AI Compliance Advisor ── */}
         <div className="bg-surface border border-primary/30">
           <div className="px-xl py-lg border-b border-primary/20 flex items-center gap-md">
@@ -153,7 +176,9 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
               <Icon name="psychology" size={16} className="text-primary" />
             </div>
             <div>
-              <p className="font-label-caps text-label-caps text-primary tracking-widest">AI COMPLIANCE ADVISOR</p>
+              <p className="font-label-caps text-label-caps text-primary tracking-widest">
+                AI COMPLIANCE ADVISOR
+              </p>
               <p className="font-mono-technical text-[10px] text-on-surface-variant">
                 Tell us your industry and regions — AI recommends which frameworks apply
               </p>
@@ -163,7 +188,9 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
           <div className="p-xl grid grid-cols-12 gap-lg">
             {/* Industry */}
             <div className="col-span-12 lg:col-span-5">
-              <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-md">INDUSTRY SECTOR</p>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-md">
+                INDUSTRY SECTOR
+              </p>
               <div className="grid grid-cols-1 gap-sm">
                 {INDUSTRIES.map((ind) => (
                   <button
@@ -184,7 +211,9 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
             {/* Region + Advisor */}
             <div className="col-span-12 lg:col-span-7 space-y-lg">
               <div>
-                <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-md">OPERATING REGIONS</p>
+                <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-md">
+                  OPERATING REGIONS
+                </p>
                 <div className="flex flex-wrap gap-sm">
                   {REGIONS.map((r) => (
                     <button
@@ -208,9 +237,15 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
                 className="flex items-center gap-sm px-xl py-md bg-primary text-background font-mono-technical text-[11px] hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {advisorLoading ? (
-                  <><span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" />ANALYSING COMPLIANCE POSTURE</>
+                  <>
+                    <span className="w-3 h-3 border border-background/40 border-t-background rounded-full animate-spin" />
+                    ANALYSING COMPLIANCE POSTURE
+                  </>
                 ) : (
-                  <><Icon name="auto_awesome" size={14} className="text-background" />GET AI FRAMEWORK RECOMMENDATIONS</>
+                  <>
+                    <Icon name="auto_awesome" size={14} className="text-background" />
+                    GET AI FRAMEWORK RECOMMENDATIONS
+                  </>
                 )}
               </button>
 
@@ -222,15 +257,22 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
 
               {advisorResult && (
                 <div className="border border-primary/20 bg-primary/5 p-lg space-y-md">
-                  <p className="font-mono-technical text-[10px] text-primary tracking-widest">AI RECOMMENDATION</p>
+                  <p className="font-mono-technical text-[10px] text-primary tracking-widest">
+                    AI RECOMMENDATION
+                  </p>
                   <p className="font-body-base text-body-base text-on-surface text-[12px] leading-relaxed">
                     {advisorResult.reasoning}
                   </p>
                   <div>
-                    <p className="font-mono-technical text-[10px] text-on-surface-variant mb-sm">RECOMMENDED FRAMEWORKS</p>
+                    <p className="font-mono-technical text-[10px] text-on-surface-variant mb-sm">
+                      RECOMMENDED FRAMEWORKS
+                    </p>
                     <div className="flex flex-wrap gap-sm">
                       {advisorResult.recommended.map((fw) => (
-                        <span key={fw} className="px-2 py-0.5 bg-primary/10 text-primary border border-primary font-mono-technical text-[10px]">
+                        <span
+                          key={fw}
+                          className="px-2 py-0.5 bg-primary/10 text-primary border border-primary font-mono-technical text-[10px]"
+                        >
                           {fw.replace(/_/g, " ")}
                         </span>
                       ))}
@@ -238,7 +280,9 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
                   </div>
                   {advisorResult.agileNotes && (
                     <div className="pt-md border-t border-primary/20">
-                      <p className="font-mono-technical text-[10px] text-on-surface-variant mb-sm">AGILE GOVERNANCE NOTES</p>
+                      <p className="font-mono-technical text-[10px] text-on-surface-variant mb-sm">
+                        AGILE GOVERNANCE NOTES
+                      </p>
                       <p className="font-body-base text-body-base text-on-surface-variant text-[12px] leading-relaxed">
                         {advisorResult.agileNotes}
                       </p>
@@ -281,13 +325,21 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
                   onClick={() => setExpandedId(isExpanded ? null : fw.id)}
                 >
                   {/* Status dot */}
-                  <div className={`w-3 h-3 rounded-full shrink-0 ${fw.active ? "bg-primary" : isRecommended ? "bg-tertiary animate-pulse" : "bg-surface-container-highest border border-border-muted"}`} />
+                  <div
+                    className={`w-3 h-3 rounded-full shrink-0 ${fw.active ? "bg-primary" : isRecommended ? "bg-tertiary animate-pulse" : "bg-surface-container-highest border border-border-muted"}`}
+                  />
 
                   {/* Labels */}
                   <div className="flex items-center gap-md flex-1 min-w-0">
-                    <span className="font-body-bold text-body-bold text-on-surface">{fw.label}</span>
-                    <span className="font-mono-technical text-[10px] text-on-surface-variant hidden md:block truncate">{fw.full}</span>
-                    <span className="font-mono-technical text-[10px] px-2 py-0.5 border border-border-muted text-on-surface-variant shrink-0">{fw.region}</span>
+                    <span className="font-body-bold text-body-bold text-on-surface">
+                      {fw.label}
+                    </span>
+                    <span className="font-mono-technical text-[10px] text-on-surface-variant hidden md:block truncate">
+                      {fw.full}
+                    </span>
+                    <span className="font-mono-technical text-[10px] px-2 py-0.5 border border-border-muted text-on-surface-variant shrink-0">
+                      {fw.region}
+                    </span>
                     {isRecommended && !fw.active && (
                       <span className="px-2 py-0.5 bg-tertiary/10 text-tertiary border border-tertiary font-mono-technical text-[10px] shrink-0 animate-pulse">
                         AI RECOMMENDED
@@ -300,7 +352,11 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
                     )}
                   </div>
 
-                  <Icon name={isExpanded ? "expand_less" : "expand_more"} size={18} className="text-on-surface-variant shrink-0" />
+                  <Icon
+                    name={isExpanded ? "expand_less" : "expand_more"}
+                    size={18}
+                    className="text-on-surface-variant shrink-0"
+                  />
                 </div>
 
                 {isExpanded && (
@@ -311,10 +367,15 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
                       </p>
 
                       <div>
-                        <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">MANDATORY FOR</p>
+                        <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">
+                          MANDATORY FOR
+                        </p>
                         <div className="flex flex-wrap gap-sm">
                           {fw.mandatoryFor.map((m) => (
-                            <span key={m} className="px-2 py-0.5 bg-surface-container-high border border-border-muted font-mono-technical text-[10px] text-on-surface-variant">
+                            <span
+                              key={m}
+                              className="px-2 py-0.5 bg-surface-container-high border border-border-muted font-mono-technical text-[10px] text-on-surface-variant"
+                            >
                               {m}
                             </span>
                           ))}
@@ -322,7 +383,9 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
                       </div>
 
                       <div>
-                        <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">SECTORS</p>
+                        <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">
+                          SECTORS
+                        </p>
                         <p className="font-body-base text-body-base text-on-surface-variant text-[11px]">
                           {fw.sectors.join(" · ")}
                         </p>
@@ -331,25 +394,35 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
 
                     <div className="col-span-12 lg:col-span-5 space-y-md">
                       <div>
-                        <p className="font-mono-technical text-[10px] text-primary tracking-widest mb-sm">AGILE GOVERNANCE CONTROLS</p>
+                        <p className="font-mono-technical text-[10px] text-primary tracking-widest mb-sm">
+                          AGILE GOVERNANCE CONTROLS
+                        </p>
                         <div className="space-y-sm">
                           {fw.agileControls.map((ctrl) => (
                             <div key={ctrl} className="flex items-center gap-sm">
                               <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                              <span className="font-mono-technical text-[10px] text-on-surface-variant">{ctrl}</span>
+                              <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                                {ctrl}
+                              </span>
                             </div>
                           ))}
                         </div>
                       </div>
 
                       <div className="pt-md border-t border-border-muted space-y-sm">
-                        <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">CONNECTED TOOLS</p>
+                        <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
+                          CONNECTED TOOLS
+                        </p>
                         {connectors.length === 0 ? (
-                          <p className="font-mono-technical text-[10px] text-on-surface-variant/50">No connectors registered</p>
+                          <p className="font-mono-technical text-[10px] text-on-surface-variant/50">
+                            No connectors registered
+                          </p>
                         ) : (
                           connectors.map((c) => (
                             <div key={c.id} className="flex items-center gap-sm">
-                              <span className={`w-1.5 h-1.5 rounded-full ${c.enabled ? "bg-primary" : "bg-on-surface-variant"}`} />
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${c.enabled ? "bg-primary" : "bg-on-surface-variant"}`}
+                              />
                               <span className="font-mono-technical text-[10px] text-on-surface-variant">
                                 {c.name} ({c.type.toUpperCase()})
                               </span>
@@ -360,11 +433,15 @@ export default function FrameworkConfigClient({ projectId, projectName, framewor
 
                       {triggerRules.length > 0 && (
                         <div className="pt-md border-t border-border-muted">
-                          <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">TRIGGER RULES</p>
+                          <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">
+                            TRIGGER RULES
+                          </p>
                           {triggerRules.map((r) => (
                             <div key={r.id} className="flex items-center gap-sm">
                               <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
-                              <span className="font-mono-technical text-[10px] text-on-surface-variant">{r.name} ({r.source})</span>
+                              <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                                {r.name} ({r.source})
+                              </span>
                             </div>
                           ))}
                         </div>

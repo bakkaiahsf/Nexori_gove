@@ -198,19 +198,14 @@ export default async function OrchestrationPage() {
     blocked: serialisedCases.filter((c) =>
       c.gates.some((g) => g.status === "REJECTED" && !g.skipped)
     ).length,
-    pending: serialisedCases.filter((c) =>
-      c.gates.some((g) => g.pendingApprovalId && !g.skipped)
-    ).length,
+    pending: serialisedCases.filter((c) => c.gates.some((g) => g.pendingApprovalId && !g.skipped))
+      .length,
     waivers: serialisedCases.reduce((sum, c) => sum + c.waiverCount, 0),
     aiMode: aiSetting?.mode ?? "AI_ASSIST",
   };
 
   return (
-    <OrchestrationClient
-      projectName={project.name}
-      groups={groups}
-      programStats={programStats}
-    />
+    <OrchestrationClient projectName={project.name} groups={groups} programStats={programStats} />
   );
 }
 

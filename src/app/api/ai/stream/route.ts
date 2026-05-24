@@ -13,7 +13,10 @@ const GOVERNANCE_SYSTEM_PROMPT =
   "Only use retrieved context to answer. If context is insufficient, say so explicitly. " +
   "Never invent governance evidence. Cite all source IDs.";
 
-const BLOCKED_MODES = new Set<AIControlMode>([AIControlMode.HUMAN_ONLY, AIControlMode.EMERGENCY_LOCK]);
+const BLOCKED_MODES = new Set<AIControlMode>([
+  AIControlMode.HUMAN_ONLY,
+  AIControlMode.EMERGENCY_LOCK,
+]);
 
 function enc(obj: unknown) {
   return new TextEncoder().encode(`data: ${JSON.stringify(obj)}\n\n`);
@@ -39,7 +42,8 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
-  const provider = data.provider ?? (process.env.AI_DEFAULT_PROVIDER as "openai" | "anthropic") ?? "anthropic";
+  const provider =
+    data.provider ?? (process.env.AI_DEFAULT_PROVIDER as "openai" | "anthropic") ?? "anthropic";
   const model =
     data.model ??
     (provider === "anthropic"
@@ -49,7 +53,10 @@ export async function POST(req: NextRequest) {
 
   // Governance mode check
   const setting = data.projectId
-    ? await prisma.aIControlSetting.findUnique({ where: { projectId: data.projectId }, select: { mode: true } })
+    ? await prisma.aIControlSetting.findUnique({
+        where: { projectId: data.projectId },
+        select: { mode: true },
+      })
     : null;
   const mode = (setting?.mode ?? AIControlMode.AI_ASSIST) as AIControlMode;
 
@@ -76,7 +83,11 @@ export async function POST(req: NextRequest) {
       },
     });
     return new Response(stream, {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
     });
   }
 
@@ -105,7 +116,10 @@ export async function POST(req: NextRequest) {
             model,
             max_tokens: maxTokens,
             system: systemText || GOVERNANCE_SYSTEM_PROMPT,
-            messages: userMessages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+            messages: userMessages.map((m) => ({
+              role: m.role as "user" | "assistant",
+              content: m.content,
+            })),
           });
 
           for await (const event of stream) {

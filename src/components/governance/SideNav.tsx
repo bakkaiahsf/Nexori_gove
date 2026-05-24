@@ -60,7 +60,9 @@ function EmergencyShutdownButton() {
   if (state === "confirming") {
     return (
       <div className="space-y-xs">
-        <p className="font-mono-technical text-[10px] text-critical text-center">CONFIRM SHUTDOWN?</p>
+        <p className="font-mono-technical text-[10px] text-critical text-center">
+          CONFIRM SHUTDOWN?
+        </p>
         <div className="flex gap-xs">
           <button
             onClick={async () => {
@@ -77,7 +79,9 @@ function EmergencyShutdownButton() {
                 });
                 router.push("/ai-control");
                 router.refresh();
-              } catch { setState("idle"); }
+              } catch {
+                setState("idle");
+              }
             }}
             className="flex-1 bg-critical text-on-error font-label-caps text-label-caps py-sm text-[10px] hover:brightness-110"
           >
@@ -110,12 +114,13 @@ export default function SideNav() {
   const { data: session } = useSession();
   const [signingOut, setSigningOut] = useState(false);
 
-  const initials = session?.user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() ?? "??";
+  const initials =
+    session?.user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() ?? "??";
 
   const roleBadge: Record<string, string> = {
     admin: "text-primary border-primary",
@@ -151,7 +156,8 @@ export default function SideNav() {
               {group.label}
             </p>
             {group.items.map((item) => {
-              const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+              const active =
+                pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
@@ -202,12 +208,17 @@ export default function SideNav() {
               <p className="font-body-bold text-body-bold text-on-surface text-[11px] truncate">
                 {session.user.name}
               </p>
-              <span className={`font-mono-technical text-[9px] border px-1 ${roleBadge[session.user.role] ?? roleBadge.viewer}`}>
+              <span
+                className={`font-mono-technical text-[9px] border px-1 ${roleBadge[session.user.role] ?? roleBadge.viewer}`}
+              >
                 {session.user.role?.toUpperCase()}
               </span>
             </div>
             <button
-              onClick={async () => { setSigningOut(true); await signOut({ callbackUrl: "/sign-in" }); }}
+              onClick={async () => {
+                setSigningOut(true);
+                await signOut({ callbackUrl: "/sign-in" });
+              }}
               disabled={signingOut}
               title="Sign out"
               className="text-on-surface-variant hover:text-critical transition-colors shrink-0"

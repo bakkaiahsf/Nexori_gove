@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
 const PHASE_META: Record<string, { label: string; cls: string }> = {
   "change-delivery": { label: "Change", cls: "text-primary border-primary bg-primary/10" },
   "ai-deployment": { label: "AI Deploy", cls: "text-tertiary border-tertiary bg-tertiary/10" },
-  "third-party-onboarding": { label: "3rd Party", cls: "text-on-surface-variant border-border-muted" },
+  "third-party-onboarding": {
+    label: "3rd Party",
+    cls: "text-on-surface-variant border-border-muted",
+  },
   incident: { label: "Incident", cls: "text-critical border-critical bg-critical/10" },
 };
 
@@ -69,7 +72,9 @@ export default async function Cases() {
   const totalCases = cases.length;
   const activeCases = cases.filter((c) => c.status === "active").length;
   const totalGates = cases.flatMap((c) => c.governanceGates).length;
-  const approvedGates = cases.flatMap((c) => c.governanceGates).filter((g) => g.status === GateStatus.APPROVED).length;
+  const approvedGates = cases
+    .flatMap((c) => c.governanceGates)
+    .filter((g) => g.status === GateStatus.APPROVED).length;
 
   return (
     <>
@@ -104,34 +109,49 @@ export default async function Cases() {
               const rejected = gates.filter((g) => g.status === GateStatus.REJECTED).length;
               const pending = gates.filter((g) => g.status === "PENDING" && !g.skipped).length;
               const skipped = gates.filter((g) => g.skipped).length;
-              const phase = PHASE_META[c.phase] ?? { label: c.phase, cls: "text-on-surface-variant border-border-muted" };
+              const phase = PHASE_META[c.phase] ?? {
+                label: c.phase,
+                cls: "text-on-surface-variant border-border-muted",
+              };
               const statusCls = STATUS_CLS[c.status] ?? STATUS_CLS.active;
 
               return (
-                <Link key={c.id} href={`/cases/${c.id}`} className="block bg-surface border border-border-muted hover:border-primary transition-colors cursor-pointer">
+                <Link
+                  key={c.id}
+                  href={`/cases/${c.id}`}
+                  className="block bg-surface border border-border-muted hover:border-primary transition-colors cursor-pointer"
+                >
                   {/* Case header */}
                   <div className="p-xl border-b border-border-muted flex items-start justify-between gap-lg">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-md mb-sm">
-                        <span className={`px-2 py-0.5 font-mono-technical text-[10px] border ${phase.cls}`}>
+                        <span
+                          className={`px-2 py-0.5 font-mono-technical text-[10px] border ${phase.cls}`}
+                        >
                           {phase.label}
                         </span>
-                        <span className={`px-2 py-0.5 font-mono-technical text-[10px] border ${statusCls}`}>
+                        <span
+                          className={`px-2 py-0.5 font-mono-technical text-[10px] border ${statusCls}`}
+                        >
                           {c.status.toUpperCase()}
                         </span>
                         {c.riskScore && (
-                          <span className={`px-2 py-0.5 font-mono-technical text-[10px] border ${
-                            c.riskScore.intensity === "enhanced"
-                              ? "text-critical border-critical bg-critical/10"
-                              : c.riskScore.intensity === "regulated"
-                                ? "text-tertiary border-tertiary bg-tertiary/10"
-                                : "text-primary border-primary bg-primary/10"
-                          }`}>
+                          <span
+                            className={`px-2 py-0.5 font-mono-technical text-[10px] border ${
+                              c.riskScore.intensity === "enhanced"
+                                ? "text-critical border-critical bg-critical/10"
+                                : c.riskScore.intensity === "regulated"
+                                  ? "text-tertiary border-tertiary bg-tertiary/10"
+                                  : "text-primary border-primary bg-primary/10"
+                            }`}
+                          >
                             {c.riskScore.intensity?.toUpperCase()}
                           </span>
                         )}
                       </div>
-                      <h3 className="font-body-bold text-body-bold text-on-surface mb-xs">{c.title}</h3>
+                      <h3 className="font-body-bold text-body-bold text-on-surface mb-xs">
+                        {c.title}
+                      </h3>
                       {c.description && (
                         <p className="font-body-base text-body-base text-on-surface-variant text-[12px] line-clamp-1">
                           {c.description}
@@ -144,11 +164,15 @@ export default async function Cases() {
                       </p>
                       {c.riskScore && (
                         <p className="font-mono-technical text-[11px] text-on-surface">
-                          Risk: <span className="text-primary">{Math.round(c.riskScore.compositeScore)}</span>
+                          Risk:{" "}
+                          <span className="text-primary">
+                            {Math.round(c.riskScore.compositeScore)}
+                          </span>
                         </p>
                       )}
                       <p className="font-mono-technical text-[10px] text-on-surface-variant">
-                        {c._count.evidenceItems} evidence item{c._count.evidenceItems !== 1 ? "s" : ""}
+                        {c._count.evidenceItems} evidence item
+                        {c._count.evidenceItems !== 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
@@ -163,7 +187,9 @@ export default async function Cases() {
                         {approved > 0 && <span className="text-primary">{approved} APPROVED</span>}
                         {rejected > 0 && <span className="text-critical">{rejected} REJECTED</span>}
                         {pending > 0 && <span className="text-tertiary">{pending} PENDING</span>}
-                        {skipped > 0 && <span className="text-on-surface-variant">{skipped} SKIPPED</span>}
+                        {skipped > 0 && (
+                          <span className="text-on-surface-variant">{skipped} SKIPPED</span>
+                        )}
                       </div>
                     </div>
                     <GateBar approved={approved} total={gates.filter((g) => !g.skipped).length} />
@@ -209,7 +235,9 @@ export default async function Cases() {
             <span className="w-2 h-2 rounded-full bg-primary" />
             <span>CASE_ENGINE: ACTIVE</span>
           </div>
-          <span>TOTAL: {totalCases} CASES · {approvedGates}/{totalGates} GATES CLEARED</span>
+          <span>
+            TOTAL: {totalCases} CASES · {approvedGates}/{totalGates} GATES CLEARED
+          </span>
         </div>
         <Link href="/timeline" className="text-primary hover:underline">
           VIEW FLIGHT RECORDER →

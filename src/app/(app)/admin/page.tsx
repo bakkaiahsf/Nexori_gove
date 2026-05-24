@@ -9,7 +9,8 @@ const ADMIN_SECTIONS = [
     href: "/admin/frameworks",
     icon: "policy",
     title: "Compliance Frameworks",
-    description: "Select regulatory frameworks, set region and industry context. AI advisor suggests what your enterprise must adhere to.",
+    description:
+      "Select regulatory frameworks, set region and industry context. AI advisor suggests what your enterprise must adhere to.",
     badge: "CONFIGURATION",
     badgeCls: "text-primary border-primary bg-primary/10",
   },
@@ -17,7 +18,8 @@ const ADMIN_SECTIONS = [
     href: "/admin/trigger-rules",
     icon: "rule",
     title: "Governance Trigger Rules",
-    description: "Define which tool events activate governance. Set conditions per Jira issue type, GitHub PR target branch, GitLab MR labels, and more.",
+    description:
+      "Define which tool events activate governance. Set conditions per Jira issue type, GitHub PR target branch, GitLab MR labels, and more.",
     badge: "ORCHESTRATION",
     badgeCls: "text-tertiary border-tertiary bg-tertiary/10",
   },
@@ -25,7 +27,8 @@ const ADMIN_SECTIONS = [
     href: "/admin/connectors",
     icon: "hub",
     title: "Tool Connectors",
-    description: "Manage Jira, GitHub, and GitLab connections. View webhook endpoints, test connectivity, and monitor event logs.",
+    description:
+      "Manage Jira, GitHub, and GitLab connections. View webhook endpoints, test connectivity, and monitor event logs.",
     badge: "INTEGRATIONS",
     badgeCls: "text-primary border-primary bg-primary/10",
   },
@@ -33,7 +36,8 @@ const ADMIN_SECTIONS = [
     href: "/api/governance/gate-library",
     icon: "checklist",
     title: "Gate Library",
-    description: "Define reusable governance gates with skip conditions, SLAs, and required evidence types. Built-in gates plus admin-created custom gates.",
+    description:
+      "Define reusable governance gates with skip conditions, SLAs, and required evidence types. Built-in gates plus admin-created custom gates.",
     badge: "GATE ENGINE",
     badgeCls: "text-primary border-primary bg-primary/10",
     external: true,
@@ -42,7 +46,8 @@ const ADMIN_SECTIONS = [
     href: "/api/experts",
     icon: "group",
     title: "Expert Profiles",
-    description: "Register governance reviewers with domain expertise, jurisdiction coverage, and workload caps. AI routes approvals to the right expert.",
+    description:
+      "Register governance reviewers with domain expertise, jurisdiction coverage, and workload caps. AI routes approvals to the right expert.",
     badge: "ROUTING",
     badgeCls: "text-primary border-primary bg-primary/10",
     external: true,
@@ -51,7 +56,8 @@ const ADMIN_SECTIONS = [
     href: "/api/policies",
     icon: "description",
     title: "Policy Document RAG",
-    description: "Upload internal policies and SOPs. The platform indexes them into a governance-aware RAG corpus. AI cites policy chunks in every response.",
+    description:
+      "Upload internal policies and SOPs. The platform indexes them into a governance-aware RAG corpus. AI cites policy chunks in every response.",
     badge: "INTELLIGENCE",
     badgeCls: "text-tertiary border-tertiary bg-tertiary/10",
     external: true,
@@ -66,7 +72,9 @@ export default async function AdminHub() {
 
   const [connectorCount, ruleCount, gateCount] = await Promise.all([
     prisma.sourceConnector.count(),
-    project ? prisma.governanceTriggerRule.count({ where: { projectId: project.id } }) : Promise.resolve(0),
+    project
+      ? prisma.governanceTriggerRule.count({ where: { projectId: project.id } })
+      : Promise.resolve(0),
     prisma.gateDefinition.count({ where: { enabled: true } }),
   ]);
 
@@ -90,16 +98,21 @@ export default async function AdminHub() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1200px] mx-auto space-y-lg">
-
           {/* Platform flexibility banner */}
           <div className="bg-surface border border-primary/30 p-xl grid grid-cols-12 gap-lg">
             <div className="col-span-12 lg:col-span-8">
-              <p className="font-mono-technical text-[10px] text-primary tracking-widest mb-sm">ADAPTIVE GOVERNANCE ENGINE</p>
+              <p className="font-mono-technical text-[10px] text-primary tracking-widest mb-sm">
+                ADAPTIVE GOVERNANCE ENGINE
+              </p>
               <h2 className="font-headline-md text-headline-md text-on-surface mb-md">
                 Configure exactly how your enterprise runs governance
               </h2>
               <p className="font-body-base text-body-base text-on-surface-variant leading-relaxed">
-                NexoriOS is not a fixed-rules platform. Every aspect of governance — which frameworks apply, which events trigger a gate pipeline, what gates are required at each risk intensity, who reviews what — is configurable by your governance administrators. The AI engine then orchestrates delivery teams through your exact process.
+                NexoriOS is not a fixed-rules platform. Every aspect of governance — which
+                frameworks apply, which events trigger a gate pipeline, what gates are required at
+                each risk intensity, who reviews what — is configurable by your governance
+                administrators. The AI engine then orchestrates delivery teams through your exact
+                process.
               </p>
             </div>
             <div className="col-span-12 lg:col-span-4 flex flex-col justify-center gap-md">
@@ -112,8 +125,13 @@ export default async function AdminHub() {
                 <div key={item.label} className="flex items-center gap-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                   <div>
-                    <span className="font-body-bold text-body-bold text-on-surface text-[12px]">{item.label}</span>
-                    <span className="font-mono-technical text-[10px] text-on-surface-variant"> — {item.desc}</span>
+                    <span className="font-body-bold text-body-bold text-on-surface text-[12px]">
+                      {item.label}
+                    </span>
+                    <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                      {" "}
+                      — {item.desc}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -130,11 +148,16 @@ export default async function AdminHub() {
               >
                 <div className="flex items-start justify-between">
                   <div className="w-10 h-10 bg-surface-container-high border border-border-muted flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-colors">
-                    <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" style={{ fontSize: 20 }}>
+                    <span
+                      className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors"
+                      style={{ fontSize: 20 }}
+                    >
                       {section.icon}
                     </span>
                   </div>
-                  <span className={`px-2 py-0.5 font-mono-technical text-[9px] border ${section.badgeCls}`}>
+                  <span
+                    className={`px-2 py-0.5 font-mono-technical text-[9px] border ${section.badgeCls}`}
+                  >
                     {section.badge}
                   </span>
                 </div>
@@ -147,7 +170,9 @@ export default async function AdminHub() {
                   </p>
                 </div>
                 <div className="mt-auto pt-md border-t border-border-muted flex items-center justify-between">
-                  <span className="font-mono-technical text-[10px] text-on-surface-variant">CONFIGURE →</span>
+                  <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                    CONFIGURE →
+                  </span>
                 </div>
               </Link>
             ))}

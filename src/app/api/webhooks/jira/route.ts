@@ -56,8 +56,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const eventType = webhookEvent.includes("created")
     ? "issue.created"
     : webhookEvent.includes("updated")
-    ? "issue.updated"
-    : webhookEvent.replace("jira:", "");
+      ? "issue.updated"
+      : webhookEvent.replace("jira:", "");
 
   // Find the project linked to this connector
   const project = await prisma.project.findFirst({
@@ -144,9 +144,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       caseId: pipeline.caseId,
       totalGateCount: pipeline.totalGateCount,
       reducedFromBaseline: pipeline.reducedFromBaseline,
-      gatesIncluded: pipeline.gatesIncluded as Array<{ slug: string; gateId: string; order: number; reason: string }>,
+      gatesIncluded: pipeline.gatesIncluded as Array<{
+        slug: string;
+        gateId: string;
+        order: number;
+        reason: string;
+      }>,
       gatesSkipped: pipeline.gatesSkipped as Array<{ slug: string; skipReason: string }>,
-      inheritedApprovals: (pipeline.inheritedApprovals ?? []) as Array<{ slug: string; fromCaseId: string; rationale: string }>,
+      inheritedApprovals: (pipeline.inheritedApprovals ?? []) as Array<{
+        slug: string;
+        fromCaseId: string;
+        rationale: string;
+      }>,
     };
     writeGovernancePipelineToJira(result.caseId, pipelineResult, jiraConnector, project.id).catch(
       () => void 0
