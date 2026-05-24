@@ -5,6 +5,8 @@ import { AIControlMode, RegulatoryFramework } from "@prisma/client";
 import type { ProjectSummary } from "./constants";
 export type { ProjectSummary } from "./constants";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProjectsPage() {
   const [projects, connectors, totalCases, totalGates] = await Promise.all([
     prisma.project.findMany({

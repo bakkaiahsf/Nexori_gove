@@ -1,6 +1,8 @@
 import prisma from "@/lib/db";
 import Link from "next/link";
 import ExpertProfilesClient from "./ExpertProfilesClient";
+
+export const dynamic = "force-dynamic";
 import type { ExpertData } from "./constants";
 export type { ExpertData } from "./constants";
 

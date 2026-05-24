@@ -1,6 +1,8 @@
 import prisma from "@/lib/db";
 import Link from "next/link";
 import GateLibraryClient from "./GateLibraryClient";
+
+export const dynamic = "force-dynamic";
 import { CATEGORY_META } from "./constants";
 export type { GateWithStats } from "./constants";
 
