@@ -94,16 +94,14 @@ Return exactly:
       ],
     });
 
-    const text =
-      message.content[0].type === "text" ? message.content[0].text.trim() : "{}";
+    const text = message.content[0].type === "text" ? message.content[0].text.trim() : "{}";
     const jsonMatch = /\{[\s\S]*\}/.exec(text);
     if (!jsonMatch) throw new Error("No JSON in response");
 
     const raw = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
 
     const suggestedTemplate =
-      typeof raw.suggestedTemplate === "string" &&
-      VALID_TEMPLATES.includes(raw.suggestedTemplate)
+      typeof raw.suggestedTemplate === "string" && VALID_TEMPLATES.includes(raw.suggestedTemplate)
         ? raw.suggestedTemplate
         : fallbackTemplateid(domain, labels, issueType);
 
@@ -123,9 +121,7 @@ Return exactly:
       suggestedTemplate,
       suggestedFrameworks,
       suggestedAiMode,
-      riskFactors: Array.isArray(raw.riskFactors)
-        ? (raw.riskFactors as string[]).slice(0, 5)
-        : [],
+      riskFactors: Array.isArray(raw.riskFactors) ? (raw.riskFactors as string[]).slice(0, 5) : [],
       rationale: typeof raw.rationale === "string" ? raw.rationale : "",
       confidence: ["HIGH", "MEDIUM", "LOW"].includes(raw.confidence as string)
         ? (raw.confidence as "HIGH" | "MEDIUM" | "LOW")
@@ -138,13 +134,8 @@ Return exactly:
   }
 }
 
-function fallbackTemplateid(
-  domain?: string,
-  labels?: string[],
-  issueType?: string
-): string {
-  const text =
-    `${domain ?? ""} ${(labels ?? []).join(" ")} ${issueType ?? ""}`.toLowerCase();
+function fallbackTemplateid(domain?: string, labels?: string[], issueType?: string): string {
+  const text = `${domain ?? ""} ${(labels ?? []).join(" ")} ${issueType ?? ""}`.toLowerCase();
   if (/\bai\b|ml|model|llm|gpt|neural|algorithm/.test(text)) return "ai-deployment";
   if (/vendor|third.party|supplier|onboard|ict.provider/.test(text))
     return "third-party-onboarding";
@@ -154,19 +145,27 @@ function fallbackTemplateid(
   return "agile-delivery";
 }
 
-function fallbackSuggestion(
-  domain?: string,
-  labels?: string[],
-  issueType?: string
-): Suggestion {
+function fallbackSuggestion(domain?: string, labels?: string[], issueType?: string): Suggestion {
   const tpl = fallbackTemplateid(domain, labels, issueType);
   const frameMap: Record<string, RegulatoryFramework[]> = {
-    "ai-deployment": [RegulatoryFramework.EU_AI_ACT, RegulatoryFramework.DORA, RegulatoryFramework.ISO_27001],
+    "ai-deployment": [
+      RegulatoryFramework.EU_AI_ACT,
+      RegulatoryFramework.DORA,
+      RegulatoryFramework.ISO_27001,
+    ],
     "third-party-onboarding": [RegulatoryFramework.DORA, RegulatoryFramework.ISO_27001],
-    "data-infrastructure": [RegulatoryFramework.GDPR, RegulatoryFramework.PCI_DSS, RegulatoryFramework.ISO_27001],
-    "regulatory-change": [RegulatoryFramework.DORA, RegulatoryFramework.ISO_27001, RegulatoryFramework.SOC2],
+    "data-infrastructure": [
+      RegulatoryFramework.GDPR,
+      RegulatoryFramework.PCI_DSS,
+      RegulatoryFramework.ISO_27001,
+    ],
+    "regulatory-change": [
+      RegulatoryFramework.DORA,
+      RegulatoryFramework.ISO_27001,
+      RegulatoryFramework.SOC2,
+    ],
     "agile-delivery": [RegulatoryFramework.SOC2],
-    "custom": [],
+    custom: [],
   };
   return {
     suggestedTemplate: tpl,

@@ -80,8 +80,9 @@ export default async function TemplatesPage() {
             </p>
             <p className="font-body-base text-body-base text-on-surface-variant leading-relaxed text-[12px]">
               Templates define <strong>which gate categories</strong> apply at each delivery stage
-              (Planning, Development, Testing, Release). When a governance case is activated — either
-              via Jira import or tool webhook — the AI composer selects specific gates from the{" "}
+              (Planning, Development, Testing, Release). When a governance case is activated —
+              either via Jira import or tool webhook — the AI composer selects specific gates from
+              the{" "}
               <a href="/admin/gate-library" className="text-primary underline">
                 Gate Library
               </a>{" "}

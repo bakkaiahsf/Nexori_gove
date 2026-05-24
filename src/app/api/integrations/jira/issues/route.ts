@@ -107,9 +107,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ issues, total: data.total });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json(
-      { error: `Could not reach Jira. (${msg})` },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: `Could not reach Jira. (${msg})` }, { status: 502 });
   }
 }

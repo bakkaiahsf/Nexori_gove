@@ -121,7 +121,9 @@ export async function POST(req: NextRequest) {
 
   // Build compact gate catalog for AI prompt (to stay within token limits)
   const gateCatalog = gates
-    .map((g) => `${g.slug} | ${g.name} | category:${g.category} | roles:${g.approverRoles.join(",")}`)
+    .map(
+      (g) => `${g.slug} | ${g.name} | category:${g.category} | roles:${g.approverRoles.join(",")}`
+    )
     .join("\n");
 
   const changeContext = [
@@ -190,12 +192,10 @@ Rules:
           summary?: string;
         };
 
-        selectedSlugs = (parsed.gates ?? []).map((g) => g.slug).filter((s) =>
-          gates.some((g) => g.slug === s)
-        );
-        gateReasons = Object.fromEntries(
-          (parsed.gates ?? []).map((g) => [g.slug, g.reason])
-        );
+        selectedSlugs = (parsed.gates ?? [])
+          .map((g) => g.slug)
+          .filter((s) => gates.some((g) => g.slug === s));
+        gateReasons = Object.fromEntries((parsed.gates ?? []).map((g) => [g.slug, g.reason]));
 
         // Store summary for response
         const aiSummary = parsed.summary ?? "";
@@ -284,7 +284,10 @@ function ruleBasedSelection(
     const roles = gate.approverRoles.join(" ").toLowerCase();
 
     // Architecture changes
-    if (/architecture|data|infrastructure|schema|database|pipeline/.test(text) && (cat === "architecture" || roles.includes("architecture"))) {
+    if (
+      /architecture|data|infrastructure|schema|database|pipeline/.test(text) &&
+      (cat === "architecture" || roles.includes("architecture"))
+    ) {
       selected.add(gate.slug);
     }
     // UI/UX changes
@@ -296,7 +299,10 @@ function ruleBasedSelection(
       selected.add(gate.slug);
     }
     // AI governance
-    if ((cat === "ai-governance" || slug.includes("ai")) && /ai|ml|model|algorithm|llm/.test(text)) {
+    if (
+      (cat === "ai-governance" || slug.includes("ai")) &&
+      /ai|ml|model|algorithm|llm/.test(text)
+    ) {
       selected.add(gate.slug);
     }
     // DORA frameworks
@@ -304,14 +310,19 @@ function ruleBasedSelection(
       selected.add(gate.slug);
     }
     // Change management — always include for regulated domains
-    if (cat === "change-management" && (domain === "banking" || domain === "insurance" || domain === "fintech")) {
+    if (
+      cat === "change-management" &&
+      (domain === "banking" || domain === "insurance" || domain === "fintech")
+    ) {
       selected.add(gate.slug);
     }
   }
 
   // Ensure at least one operational gate
   if (selected.size === 0) {
-    const firstOp = gates.find((g) => g.category === "operational" || g.category === "change-management");
+    const firstOp = gates.find(
+      (g) => g.category === "operational" || g.category === "change-management"
+    );
     if (firstOp) selected.add(firstOp.slug);
   }
 

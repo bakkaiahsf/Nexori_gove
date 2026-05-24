@@ -4,9 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TemplateRow } from "./page";
 
-function Icon({ name, size = 14, className = "" }: { name: string; size?: number; className?: string }) {
+function Icon({
+  name,
+  size = 14,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  className?: string;
+}) {
   return (
-    <span className={`material-symbols-outlined select-none leading-none ${className}`} style={{ fontSize: size }}>
+    <span
+      className={`material-symbols-outlined select-none leading-none ${className}`}
+      style={{ fontSize: size }}
+    >
       {name}
     </span>
   );
@@ -20,13 +31,13 @@ const EFFORT_CFG: Record<string, { cls: string; label: string }> = {
 };
 
 const GATE_CATEGORY_COLORS: Record<string, string> = {
-  "regulatory": "text-critical border-critical/30 bg-critical/5",
-  "security": "text-tertiary border-tertiary/30 bg-tertiary/5",
-  "architecture": "text-primary border-primary/30 bg-primary/5",
+  regulatory: "text-critical border-critical/30 bg-critical/5",
+  security: "text-tertiary border-tertiary/30 bg-tertiary/5",
+  architecture: "text-primary border-primary/30 bg-primary/5",
   "ai-governance": "text-primary border-primary/30 bg-primary/10",
-  "technical": "text-on-surface border-border-muted",
+  technical: "text-on-surface border-border-muted",
   "change-management": "text-on-surface-variant border-border-muted",
-  "operational": "text-on-surface-variant border-border-muted",
+  operational: "text-on-surface-variant border-border-muted",
 };
 
 function TemplateCard({ template }: { template: TemplateRow }) {
@@ -36,17 +47,20 @@ function TemplateCard({ template }: { template: TemplateRow }) {
 
   return (
     <div className="bg-surface border border-border-muted hover:border-primary/40 transition-colors">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left p-lg space-y-md"
-      >
+      <button onClick={() => setExpanded((v) => !v)} className="w-full text-left p-lg space-y-md">
         <div className="flex items-start gap-md">
           <div className="w-9 h-9 bg-surface-container-high border border-border-muted flex items-center justify-center shrink-0">
-            <Icon name={template.icon ?? "category"} size={18} className="text-on-surface-variant" />
+            <Icon
+              name={template.icon ?? "category"}
+              size={18}
+              className="text-on-surface-variant"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-sm flex-wrap">
-              <p className="font-body-bold text-body-bold text-on-surface text-[14px]">{template.name}</p>
+              <p className="font-body-bold text-body-bold text-on-surface text-[14px]">
+                {template.name}
+              </p>
               {template.isBuiltIn && (
                 <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-primary/30 text-primary/70">
                   BUILT-IN
@@ -77,12 +91,18 @@ function TemplateCard({ template }: { template: TemplateRow }) {
         {/* Tags */}
         <div className="flex gap-xs flex-wrap">
           {template.suggestedFrameworks.map((f) => (
-            <span key={f} className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant">
+            <span
+              key={f}
+              className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant"
+            >
               {f.replace(/_/g, " ")}
             </span>
           ))}
           {template.suggestedDomains.map((d) => (
-            <span key={d} className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant capitalize">
+            <span
+              key={d}
+              className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant capitalize"
+            >
               {d}
             </span>
           ))}
@@ -118,7 +138,10 @@ function TemplateCard({ template }: { template: TemplateRow }) {
                   {s.gateHints && s.gateHints.length > 0 && (
                     <div className="flex gap-xs flex-wrap">
                       {s.gateHints.map((hint) => (
-                        <span key={hint} className="font-mono-technical text-[9px] text-on-surface-variant">
+                        <span
+                          key={hint}
+                          className="font-mono-technical text-[9px] text-on-surface-variant"
+                        >
                           {hint}
                         </span>
                       ))}
@@ -134,7 +157,8 @@ function TemplateCard({ template }: { template: TemplateRow }) {
       {expanded && template.stages.length === 0 && (
         <div className="px-lg pb-lg border-t border-border-muted pt-md">
           <p className="font-mono-technical text-[10px] text-on-surface-variant">
-            No stages defined. Gates are selected ad-hoc from the Gate Library when governance is activated.
+            No stages defined. Gates are selected ad-hoc from the Gate Library when governance is
+            activated.
           </p>
         </div>
       )}
@@ -189,7 +213,9 @@ function NewTemplateForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div>
-        <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">NAME *</label>
+        <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">
+          NAME *
+        </label>
         <input
           autoFocus
           value={name}
@@ -199,7 +225,9 @@ function NewTemplateForm({ onClose }: { onClose: () => void }) {
         />
       </div>
       <div>
-        <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">DESCRIPTION</label>
+        <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">
+          DESCRIPTION
+        </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -209,7 +237,9 @@ function NewTemplateForm({ onClose }: { onClose: () => void }) {
         />
       </div>
       <div>
-        <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">GOVERNANCE EFFORT</label>
+        <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">
+          GOVERNANCE EFFORT
+        </label>
         <div className="flex gap-xs">
           {(["LOW", "MEDIUM", "HIGH", "CUSTOM"] as const).map((e) => (
             <button

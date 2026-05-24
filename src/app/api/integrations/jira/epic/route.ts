@@ -113,8 +113,7 @@ export async function GET(req: NextRequest) {
   }
 
   const descRaw = issueData.fields.description;
-  const descText =
-    typeof descRaw === "string" ? descRaw : extractAdfText(descRaw as AdfNode);
+  const descText = typeof descRaw === "string" ? descRaw : extractAdfText(descRaw as AdfNode);
 
   return NextResponse.json({
     key: issueData.key,
