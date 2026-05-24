@@ -30,6 +30,7 @@ const NAV_GROUPS = [
   {
     label: "ADMIN",
     items: [
+      { href: "/admin/projects", icon: "folder_special", label: "Projects & Programs" },
       { href: "/admin", icon: "tune", label: "Configuration" },
       { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
       { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },

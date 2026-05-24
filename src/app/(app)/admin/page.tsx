@@ -6,6 +6,15 @@ export const dynamic = "force-dynamic";
 
 const ADMIN_SECTIONS = [
   {
+    href: "/admin/projects",
+    icon: "folder_special",
+    title: "Projects & Programs",
+    description:
+      "Onboard new projects and programmes. View governance readiness, link connectors, and track GO/NO_GO status across your entire portfolio.",
+    badge: "PORTFOLIO",
+    badgeCls: "text-primary border-primary bg-primary/10",
+  },
+  {
     href: "/admin/frameworks",
     icon: "policy",
     title: "Compliance Frameworks",
