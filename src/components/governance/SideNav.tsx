@@ -22,6 +22,7 @@ const NAV_GROUPS = [
     label: "INTELLIGENCE",
     items: [
       { href: "/intelligence", icon: "psychology", label: "AI Intelligence" },
+      { href: "/chat", icon: "chat", label: "Gov. AI Chat" },
       { href: "/forecast", icon: "analytics", label: "Gov. Forecast" },
       { href: "/ai-control", icon: "security", label: "AI Control" },
     ],

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORY_META, type GateWithStats } from "./page";
+import { CATEGORY_META, type GateWithStats } from "./constants";
 
 function Icon({
   name,
