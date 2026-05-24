@@ -54,11 +54,51 @@ export default async function AIControl() {
     );
   }
 
-  const [aiSetting, approvals, { thirdParties }] = await Promise.all([
-    getAIControlSetting(project.id),
-    getPendingApprovals(project.id),
-    getRegulatoryData(project.id),
-  ]);
+  const [aiSetting, approvals, { thirdParties }, lastScore, activeWaivers, recentAIEvents] =
+    await Promise.all([
+      getAIControlSetting(project.id),
+      getPendingApprovals(project.id),
+      getRegulatoryData(project.id),
+      prisma.governanceRiskScore.findFirst({
+        where: { case: { projectId: project.id } },
+        orderBy: { scoredAt: "desc" },
+        select: {
+          compositeScore: true,
+          intensity: true,
+          aiModeRecommended: true,
+          reasoning: true,
+          scoredAt: true,
+          case: { select: { title: true, id: true } },
+        },
+      }),
+      prisma.governanceWaiver.findMany({
+        where: { projectId: project.id, status: { in: ["pending", "approved"] } },
+        orderBy: { requestedAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          waiverType: true,
+          status: true,
+          requestedBy: true,
+          requestedAt: true,
+          residualRisk: true,
+        },
+      }),
+      prisma.aIUsageEvent.findMany({
+        where: { projectId: project.id },
+        orderBy: { timestamp: "desc" },
+        take: 6,
+        select: {
+          id: true,
+          model: true,
+          tokensIn: true,
+          tokensOut: true,
+          mode: true,
+          outcome: true,
+          timestamp: true,
+        },
+      }),
+    ]);
 
   const currentMode = aiSetting?.mode ?? AIControlMode.AI_ASSIST;
   const isEmergencyLocked = currentMode === AIControlMode.EMERGENCY_LOCK;
@@ -236,6 +276,159 @@ export default async function AIControl() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* ── Governance Intelligence Panel ── */}
+          <div className="col-span-12 grid grid-cols-12 gap-lg mt-lg">
+            {/* Last AI Risk Score */}
+            <div className="col-span-12 md:col-span-4 bg-surface border border-border-muted p-xl space-y-md">
+              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                AI RISK INTELLIGENCE
+              </h3>
+              {lastScore ? (
+                <div className="space-y-sm">
+                  <div className="flex items-end gap-md">
+                    <span className="font-mono-technical text-[42px] text-on-surface leading-none font-bold">
+                      {Math.round(lastScore.compositeScore)}
+                    </span>
+                    <div className="pb-1 space-y-xs">
+                      <span
+                        className={`px-2 py-0.5 font-mono-technical text-[10px] border block ${
+                          lastScore.intensity === "critical"
+                            ? "border-critical text-critical bg-critical/10"
+                            : lastScore.intensity === "enhanced"
+                              ? "border-tertiary text-tertiary bg-tertiary/10"
+                              : lastScore.intensity === "regulated"
+                                ? "border-primary text-primary bg-primary/10"
+                                : "border-border-muted text-on-surface-variant"
+                        }`}
+                      >
+                        {lastScore.intensity?.toUpperCase()} RISK
+                      </span>
+                      <span className="font-mono-technical text-[9px] text-on-surface-variant block">
+                        AI MODE REC: {lastScore.aiModeRecommended?.replace(/_/g, " ")}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-mono-technical text-[10px] text-on-surface-variant leading-relaxed border-t border-border-muted pt-sm">
+                    {lastScore.reasoning?.slice(0, 180)}
+                    {(lastScore.reasoning?.length ?? 0) > 180 ? "…" : ""}
+                  </p>
+                  <p className="font-mono-technical text-[9px] text-on-surface-variant/60">
+                    Case:{" "}
+                    <a
+                      href={`/cases/${lastScore.case.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {lastScore.case.title.slice(0, 40)}
+                      {lastScore.case.title.length > 40 ? "…" : ""}
+                    </a>{" "}
+                    · {new Date(lastScore.scoredAt).toLocaleString("en-GB")}
+                  </p>
+                </div>
+              ) : (
+                <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                  No risk scores yet. Create a governance case to trigger AI analysis.
+                </p>
+              )}
+            </div>
+
+            {/* Active Waivers */}
+            <div className="col-span-12 md:col-span-4 bg-surface border border-border-muted p-xl space-y-md">
+              <div className="flex items-center justify-between">
+                <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                  ACTIVE WAIVERS
+                </h3>
+                <span
+                  className={`px-2 py-0.5 font-mono-technical text-[10px] border ${
+                    activeWaivers.length > 0
+                      ? "border-tertiary text-tertiary bg-tertiary/10"
+                      : "border-border-muted text-on-surface-variant"
+                  }`}
+                >
+                  {activeWaivers.length}
+                </span>
+              </div>
+              {activeWaivers.length === 0 ? (
+                <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                  No active waivers. All gates running standard policy.
+                </p>
+              ) : (
+                <div className="space-y-sm divide-y divide-border-muted">
+                  {activeWaivers.map((w) => (
+                    <div key={w.id} className="pt-sm first:pt-0 space-y-xs">
+                      <div className="flex items-center gap-sm">
+                        <span
+                          className={`px-1.5 py-0.5 font-mono-technical text-[9px] border ${
+                            w.status === "approved"
+                              ? "border-primary text-primary bg-primary/10"
+                              : "border-tertiary text-tertiary bg-tertiary/10"
+                          }`}
+                        >
+                          {w.status.toUpperCase()}
+                        </span>
+                        <span className="font-mono-technical text-[10px] text-on-surface capitalize">
+                          {w.waiverType.replace(/-/g, " ")}
+                        </span>
+                      </div>
+                      {w.residualRisk && (
+                        <p className="font-mono-technical text-[9px] text-on-surface-variant leading-relaxed">
+                          {w.residualRisk.slice(0, 100)}
+                          {w.residualRisk.length > 100 ? "…" : ""}
+                        </p>
+                      )}
+                      <p className="font-mono-technical text-[9px] text-on-surface-variant/60">
+                        {w.requestedBy} · {new Date(w.requestedAt).toLocaleDateString("en-GB")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* AI Usage Audit Log */}
+            <div className="col-span-12 md:col-span-4 bg-surface border border-border-muted p-xl space-y-md">
+              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                AI USAGE AUDIT
+              </h3>
+              {recentAIEvents.length === 0 ? (
+                <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                  No AI invocations logged yet.
+                </p>
+              ) : (
+                <div className="space-y-xs">
+                  {recentAIEvents.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="flex items-center gap-sm py-xs border-b border-border-muted last:border-0"
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          ev.outcome === "success" ? "bg-primary" : "bg-critical"
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono-technical text-[10px] text-on-surface truncate">
+                          {ev.model}
+                        </p>
+                        <p className="font-mono-technical text-[9px] text-on-surface-variant">
+                          {ev.mode?.replace(/_/g, " ")} · {ev.tokensIn}↑ {ev.tokensOut}↓
+                        </p>
+                      </div>
+                      <span className="font-mono-technical text-[9px] text-on-surface-variant shrink-0">
+                        {new Date(ev.timestamp).toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                  <p className="font-mono-technical text-[9px] text-on-surface-variant/60 pt-xs">
+                    All AI invocations logged per DORA Art. 28 traceability requirements.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
