@@ -48,6 +48,18 @@ enum GovernanceEventType {
   WAIVER_REQUESTED
   WAIVER_APPROVED
   JIRA_WRITEBACK_COMPLETE
+  // Case lifecycle
+  CASE_CREATED
+  // Trigger engine events
+  TRIGGER_MATCHED
+  TRIGGER_SKIPPED
+  CONNECTOR_EVENT_RECEIVED
+}
+
+enum TriggerAction {
+  FULL_PIPELINE   // full context enrichment → scoring → adaptive gate pipeline
+  CLASSIFY_ONLY   // score and classify only, no gate pipeline created
+  SKIP            // explicitly ignore (logged)
 }
 
 enum GateStatus {
@@ -142,6 +154,7 @@ model Project {
   thirdPartyDeps     ThirdPartyDependency[]
   regulatoryMappings RegulatoryMapping[]
   governanceWaivers  GovernanceWaiver[]
+  triggerRules       GovernanceTriggerRule[]
 
   @@map("projects")
 }
@@ -637,4 +650,88 @@ model PolicyChunk {
 
   @@index([documentId])
   @@map("policy_chunks")
+}
+
+// ─────────────────────────────────────────────
+// GOVERNANCE TRIGGER ENGINE
+// Admin-configurable rules: which tool events trigger governance
+// ─────────────────────────────────────────────
+
+model GovernanceTriggerRule {
+  id          String        @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  source      String        // "jira"|"github"|"gitlab"
+  eventType   String        // "epic.created"|"pr.opened"|"mr.merged"|"issue.updated"|...
+  conditions  Json          // [{ field: string, op: "eq"|"contains"|"gt"|"lt"|"matches", value: string|number }]
+  action      TriggerAction
+  priority    Int           @default(100) // higher priority evaluated first
+  enabled     Boolean       @default(true)
+  createdBy   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evaluations TriggerEvaluation[]
+
+  @@index([projectId, source, enabled])
+  @@map("governance_trigger_rules")
+}
+
+// ─────────────────────────────────────────────
+// TRIGGER EVALUATION — audit log of every incoming event
+// Records every webhook event and whether it matched a rule
+// ─────────────────────────────────────────────
+
+model TriggerEvaluation {
+  id           String        @id @default(cuid())
+  ruleId       String?       // null = no rule matched
+  connectorId  String?
+  projectId    String?
+  sourceType   String        // "jira"|"github"|"gitlab"
+  eventType    String        // e.g. "epic.created", "pr.opened"
+  eventKey     String        // e.g. "BANK-120", "owner/repo#42"
+  matched      Boolean
+  action       TriggerAction?
+  caseId       String?       // linked GovernanceCase if governance was triggered
+  payload      Json          // raw event payload snapshot
+  evaluatedAt  DateTime      @default(now())
+
+  rule GovernanceTriggerRule? @relation(fields: [ruleId], references: [id])
+
+  @@index([projectId, evaluatedAt])
+  @@index([sourceType, eventKey])
+  @@map("trigger_evaluations")
+}
+
+// ─────────────────────────────────────────────
+// PULL REQUEST — PR/MR governance link
+// Links GitHub PR or GitLab MR to a GovernanceCase
+// ─────────────────────────────────────────────
+
+model PullRequest {
+  id               String    @id @default(cuid())
+  connectorId      String
+  prNumber         Int
+  repo             String    // "owner/repo"
+  title            String
+  author           String
+  targetBranch     String
+  sourceBranch     String
+  filesChanged     Int       @default(0)
+  linesAdded       Int       @default(0)
+  linesRemoved     Int       @default(0)
+  labels           String[]
+  state            String    @default("open") // open|merged|closed
+  caseId           String?   // linked GovernanceCase (null if governance not triggered)
+  governanceStatus String    @default("pending") // pending|active|cleared|exempt
+  externalUrl      String?
+  createdAt        DateTime  @default(now())
+  mergedAt         DateTime?
+  closedAt         DateTime?
+
+  @@index([connectorId, prNumber])
+  @@index([caseId])
+  @@map("pull_requests")
 }

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import prisma from "@/lib/db";
 import { verifyJiraWebhookSignature, buildJiraConnector } from "@/lib/connectors/jira";
-import { enrichGovernanceContext } from "@/lib/intelligence/context";
-import { scoreGovernanceCase } from "@/lib/scoring/engine";
-import { composeAdaptivePipeline } from "@/lib/pipeline/composer";
 import { writeGovernancePipelineToJira } from "@/lib/connectors/jira-writeback";
-import { GovernanceEventType } from "@prisma/client";
+import { evaluateTriggerRules } from "@/lib/governance/trigger";
+import { orchestrateGovernanceCase } from "@/lib/governance/orchestrate";
+import { TriggerAction } from "@prisma/client";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const rawBody = Buffer.from(await req.arrayBuffer());
@@ -17,7 +15,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Missing connectorId parameter" }, { status: 400 });
   }
 
-  // Verify HMAC signature
   const connector = await prisma.sourceConnector.findUnique({ where: { id: connectorId } });
   if (!connector?.webhookSecret) {
     return NextResponse.json(
@@ -43,21 +40,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const webhookEvent = String(body.webhookEvent ?? "");
   const issue = body.issue as Record<string, unknown> | undefined;
   const issueKey = String(issue?.key ?? "");
-  const issueType = (issue?.fields as Record<string, unknown> | undefined)?.issuetype;
-  const isEpic =
-    typeof issueType === "object" &&
-    issueType !== null &&
-    (issueType as Record<string, unknown>).name === "Epic";
+  const issueFields = issue?.fields as Record<string, unknown> | undefined;
+  const issueType = issueFields?.issuetype as Record<string, unknown> | undefined;
+  const issueTypeName = String(issueType?.name ?? "").toLowerCase();
+  const labels = Array.isArray(issueFields?.labels) ? (issueFields.labels as string[]) : [];
+  const components = Array.isArray(issueFields?.components)
+    ? (issueFields.components as Array<{ name?: string }>).map((c) => c.name ?? "")
+    : [];
 
-  // Only process epic created/updated events
-  if (!isEpic || !issueKey || !webhookEvent.includes("issue")) {
-    return NextResponse.json({ status: "ignored", reason: "not an epic event" });
+  if (!issueKey || !webhookEvent.includes("issue")) {
+    return NextResponse.json({ status: "ignored", reason: "not an issue event" });
   }
 
+  // Map to canonical Jira event type
+  const eventType = webhookEvent.includes("created")
+    ? "issue.created"
+    : webhookEvent.includes("updated")
+    ? "issue.updated"
+    : webhookEvent.replace("jira:", "");
+
   // Find the project linked to this connector
-  const projectKeys = connector.projectKeys;
   const project = await prisma.project.findFirst({
-    where: { key: { in: projectKeys } },
+    where: { key: { in: connector.projectKeys } },
     select: { id: true, key: true },
   });
 
@@ -65,110 +69,99 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ status: "ignored", reason: "no matching project" });
   }
 
-  // Snapshot the epic
-  const jiraConnector = await buildJiraConnector(connectorId);
-  const epicData = await jiraConnector.fetchEpic(issueKey);
+  // Build evaluation payload for trigger rules
+  const evaluationPayload = {
+    issueKey,
+    issueType: issueTypeName,
+    webhookEvent,
+    labels,
+    components,
+    environment: issueFields?.environment ?? null,
+    summary: issueFields?.summary ?? null,
+  };
 
-  const snapshot = await prisma.epicSnapshot.upsert({
-    where: { id: `${connectorId}:${issueKey}` },
-    update: {
-      title: epicData.title,
-      description: epicData.description,
-      labels: epicData.labels,
-      components: epicData.components,
-      customFields: epicData.customFields as unknown as Prisma.InputJsonValue,
-      timeline: epicData.timeline
-        ? (epicData.timeline as unknown as Prisma.InputJsonValue)
-        : undefined,
-      snapshotAt: new Date(),
-    },
-    create: {
-      id: `${connectorId}:${issueKey}`,
-      connectorId,
-      sourceKey: issueKey,
-      sourceType: "epic",
-      title: epicData.title,
-      description: epicData.description,
-      labels: epicData.labels,
-      components: epicData.components,
-      customFields: epicData.customFields as unknown as Prisma.InputJsonValue,
-      timeline: epicData.timeline
-        ? (epicData.timeline as unknown as Prisma.InputJsonValue)
-        : undefined,
-    },
+  const triggerResult = await evaluateTriggerRules({
+    sourceType: "jira",
+    eventType,
+    eventKey: issueKey,
+    payload: evaluationPayload as Record<string, unknown>,
+    connectorId,
+    projectId: project.id,
   });
 
-  // Check if a governance case already exists for this epic
-  let governanceCase = await prisma.governanceCase.findFirst({
-    where: { projectId: project.id, sourceEpicKey: issueKey },
+  // If no trigger rules are configured, fall back to old behaviour (process epics only)
+  const hasRules = await prisma.governanceTriggerRule.count({
+    where: { projectId: project.id, source: "jira", enabled: true },
   });
 
-  if (!governanceCase) {
-    governanceCase = await prisma.governanceCase.create({
-      data: {
-        projectId: project.id,
-        title: epicData.title,
-        description: epicData.description,
-        phase: "change-delivery",
-        status: "active",
-        ownedBy: "governance@nexori.system",
-        sourceEpicKey: issueKey,
-        sourceConnectorId: connectorId,
-      },
-    });
-
-    await prisma.governanceEvent.create({
-      data: {
-        projectId: project.id,
-        type: GovernanceEventType.GATE_CREATED,
-        resourceType: "governance-case",
-        resourceId: governanceCase.id,
-        payload: { sourceEpicKey: issueKey, triggeredBy: "jira-webhook", snapshotId: snapshot.id },
-      },
+  if (hasRules > 0 && (!triggerResult.matched || triggerResult.action === TriggerAction.SKIP)) {
+    return NextResponse.json({
+      status: "skipped",
+      reason: "no trigger rule matched",
+      evaluationId: triggerResult.evaluationId,
     });
   }
 
-  // Run the intelligence pipeline (context → score → compose → write-back)
-  const enriched = await enrichGovernanceContext(
-    governanceCase.id,
-    epicData,
-    jiraConnector,
-    project.id
-  );
+  // Legacy fallback: only process epics when no rules configured
+  if (hasRules === 0) {
+    const isEpic = issueTypeName === "epic";
+    if (!isEpic) {
+      return NextResponse.json({ status: "ignored", reason: "not an epic (legacy mode)" });
+    }
+  }
 
-  const riskScore = await scoreGovernanceCase(
-    governanceCase.id,
-    await prisma.governanceContext.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
-    project.id,
+  // Run the governance orchestration pipeline
+  const jiraConnector = await buildJiraConnector(connectorId);
+  const epicData = await jiraConnector.fetchEpic(issueKey);
+
+  const result = await orchestrateGovernanceCase(
     {
+      projectId: project.id,
+      epicData,
+      sourceKey: issueKey,
+      sourceConnectorId: connectorId,
+      phase: "change-delivery",
       regulatoryFrameworks: epicData.regulatoryDomain ? [epicData.regulatoryDomain] : [],
       jurisdiction: epicData.jurisdiction ?? "GLOBAL",
-    }
+      snapshotOverrides: { sourceType: issueTypeName === "epic" ? "epic" : "issue" },
+    },
+    jiraConnector
   );
 
-  const pipeline = await composeAdaptivePipeline(
-    governanceCase.id,
-    await prisma.governanceRiskScore.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
-    await prisma.governanceContext.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
-    project.id,
-    {
-      regulatoryFrameworks: epicData.regulatoryDomain ? [epicData.regulatoryDomain] : [],
-      jurisdiction: epicData.jurisdiction ?? "GLOBAL",
-    }
-  );
+  // Update the TriggerEvaluation with the resulting case ID
+  if (triggerResult.evaluationId) {
+    await prisma.triggerEvaluation.update({
+      where: { id: triggerResult.evaluationId },
+      data: { caseId: result.caseId },
+    });
+  }
 
   // Write governance back to Jira (fire-and-forget)
-  writeGovernancePipelineToJira(governanceCase.id, pipeline, jiraConnector, project.id).catch(
-    () => void 0
-  );
+  const pipeline = await prisma.adaptivePipeline.findUnique({ where: { caseId: result.caseId } });
+  if (pipeline) {
+    const pipelineResult = {
+      pipelineId: pipeline.id,
+      caseId: pipeline.caseId,
+      totalGateCount: pipeline.totalGateCount,
+      reducedFromBaseline: pipeline.reducedFromBaseline,
+      gatesIncluded: pipeline.gatesIncluded as Array<{ slug: string; gateId: string; order: number; reason: string }>,
+      gatesSkipped: pipeline.gatesSkipped as Array<{ slug: string; skipReason: string }>,
+      inheritedApprovals: (pipeline.inheritedApprovals ?? []) as Array<{ slug: string; fromCaseId: string; rationale: string }>,
+    };
+    writeGovernancePipelineToJira(result.caseId, pipelineResult, jiraConnector, project.id).catch(
+      () => void 0
+    );
+  }
 
   return NextResponse.json({
     status: "processed",
-    caseId: governanceCase.id,
-    intensity: riskScore.intensity,
-    compositeScore: riskScore.compositeScore,
-    totalGateCount: pipeline.totalGateCount,
-    reducedFromBaseline: pipeline.reducedFromBaseline,
-    contextId: enriched.contextId,
+    caseId: result.caseId,
+    created: result.created,
+    intensity: result.intensity,
+    compositeScore: result.compositeScore,
+    totalGateCount: result.totalGateCount,
+    reducedFromBaseline: result.reducedFromBaseline,
+    evaluationId: triggerResult.evaluationId,
+    triggerRule: triggerResult.ruleName,
   });
 }

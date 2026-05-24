@@ -1,3 +1,5 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
 import {
   getProjectSummary,
@@ -8,6 +10,7 @@ import {
 import HeatmapClient from "@/components/governance/HeatmapClient";
 import StatusBarClient from "@/components/governance/StatusBarClient";
 import ApproveButton from "@/components/governance/ApproveButton";
+import SearchBar from "@/components/governance/SearchBar";
 
 // Server Component — fetches directly from Prisma, no API overhead
 export const dynamic = "force-dynamic";
@@ -69,6 +72,7 @@ function phaseLabel(phase: string): string {
 }
 
 export default async function CommandCenter() {
+  const session = await getServerSession(authOptions);
   const project = await prisma.project.findUnique({
     where: { key: DEMO_PROJECT_KEY },
     select: { id: true },
@@ -100,14 +104,7 @@ export default async function CommandCenter() {
       <header className="h-16 px-xl flex justify-between items-center border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-xl">
           <h1 className="font-display-lg text-display-lg text-primary tracking-tight">NexoriOS</h1>
-          <div className="relative flex items-center">
-            <Icon name="search" size={16} className="absolute left-3 text-on-surface-variant" />
-            <input
-              className="bg-surface-container-low border border-border-muted text-on-surface text-body-base px-10 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary min-w-[320px] rounded-none placeholder:text-on-surface-variant"
-              placeholder="Search parameters..."
-              type="text"
-            />
-          </div>
+          <SearchBar />
         </div>
         <div className="flex items-center gap-lg">
           <div className="flex gap-md border-r border-border-muted pr-lg">
@@ -126,13 +123,15 @@ export default async function CommandCenter() {
             ))}
           </div>
           <div className="flex items-center gap-md">
-            <div className="w-8 h-8 bg-border-muted border border-border-muted flex items-center justify-center font-mono-technical text-[10px] text-on-surface">
-              GL
+            <div className="w-8 h-8 bg-primary/10 border border-primary flex items-center justify-center font-mono-technical text-[10px] text-primary">
+              {session?.user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "??"}
             </div>
             <div className="hidden lg:block">
-              <p className="font-body-bold text-body-bold text-on-surface">Governance Lead</p>
+              <p className="font-body-bold text-body-bold text-on-surface">
+                {session?.user?.name ?? "Guest"}
+              </p>
               <p className="font-mono-technical text-[10px] text-primary">
-                {summary.aiMode.replace("_", " ")}
+                {(session?.user?.role ?? "viewer").toUpperCase()}
               </p>
             </div>
           </div>

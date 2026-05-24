@@ -25,13 +25,13 @@ export interface EnrichedContext {
 export async function enrichGovernanceContext(
   caseId: string,
   epicData: EpicData,
-  connector: SourceConnector,
+  connector: SourceConnector | null | undefined,
   projectId: string,
   tenantId?: string
 ): Promise<EnrichedContext> {
   // 1. Fetch Confluence page summaries (best-effort)
   const confluenceSummaries: string[] = [];
-  if (connector.fetchConfluencePage) {
+  if (connector?.fetchConfluencePage) {
     for (const url of epicData.confluencePageUrls.slice(0, 3)) {
       try {
         const text = await connector.fetchConfluencePage(url);

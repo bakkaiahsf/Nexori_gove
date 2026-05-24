@@ -125,6 +125,26 @@ const EVENT_BADGE: Record<GovernanceEventType, { label: string; cls: string; dot
     cls: "bg-primary/10 text-primary border border-primary",
     dot: "bg-primary border-primary",
   },
+  CASE_CREATED: {
+    label: "CASE OPENED",
+    cls: "bg-primary/10 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  TRIGGER_MATCHED: {
+    label: "TRIGGERED",
+    cls: "bg-primary/20 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  TRIGGER_SKIPPED: {
+    label: "NO MATCH",
+    cls: "bg-surface-container-highest text-on-surface-variant border border-border-muted",
+    dot: "bg-on-surface-variant border-border-muted",
+  },
+  CONNECTOR_EVENT_RECEIVED: {
+    label: "CONNECTOR",
+    cls: "bg-primary/10 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {

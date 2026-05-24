@@ -7,6 +7,7 @@ import {
 } from "@/lib/governance";
 import AIModeToggle from "@/components/governance/AIModeToggle";
 import ApproveButton from "@/components/governance/ApproveButton";
+import RejectButton from "@/components/governance/RejectButton";
 import EmergencyButton from "@/components/governance/EmergencyButton";
 import { AIControlMode } from "@prisma/client";
 
@@ -158,9 +159,7 @@ export default async function AIControl() {
                     </p>
                     <div className="flex gap-sm">
                       <ApproveButton approvalId={a.id} />
-                      <button className="flex-1 border border-border-muted text-on-surface-variant font-label-caps text-label-caps py-xs hover:border-on-surface-variant transition-colors">
-                        REJECT
-                      </button>
+                      <RejectButton approvalId={a.id} />
                     </div>
                   </div>
                 ))
