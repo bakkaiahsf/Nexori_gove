@@ -543,6 +543,29 @@ model GateDefinition {
 }
 
 // ─────────────────────────────────────────────
+// GOVERNANCE TEMPLATE — admin-configurable blueprint
+// Defines which gate categories apply at each stage.
+// AI composer selects specific gates from the gate library.
+// ─────────────────────────────────────────────
+
+model GovernanceTemplate {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String?
+  icon                String?
+  effort              String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CUSTOM
+  stages              Json     @default("[]")      // [{stage, gateCategories, gateHints}]
+  suggestedFrameworks String[] @default([])
+  suggestedDomains    String[] @default([])
+  isBuiltIn           Boolean  @default(false)
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("governance_templates")
+}
+
+// ─────────────────────────────────────────────
 // ADAPTIVE PIPELINE — composition audit record
 // 1:1 with GovernanceCase
 // ─────────────────────────────────────────────
