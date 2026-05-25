@@ -14,6 +14,9 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 const ComposeSchema = z.object({
   title: z.string().max(500),
   description: z.string().max(2000).optional(),

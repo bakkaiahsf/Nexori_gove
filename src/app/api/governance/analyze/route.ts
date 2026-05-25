@@ -3,6 +3,9 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { AIControlMode, RegulatoryFramework } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 const AnalyzeSchema = z.object({
   title: z.string().max(500),
   description: z.string().max(2000).optional(),
