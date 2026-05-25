@@ -137,7 +137,7 @@ export async function orchestrateGovernanceCase(
     await prisma.governanceRiskScore.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
     await prisma.governanceContext.findUniqueOrThrow({ where: { caseId: governanceCase.id } }),
     projectId,
-    { regulatoryFrameworks, jurisdiction }
+    { regulatoryFrameworks, jurisdiction, phase }
   );
 
   return {

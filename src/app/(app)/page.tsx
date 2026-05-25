@@ -149,7 +149,10 @@ export default async function CommandCenter() {
       {/* ── Top Bar ── */}
       <header className="h-16 px-xl flex justify-between items-center border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-xl">
-          <h1 className="font-display-lg text-display-lg text-primary tracking-tight">NexoriOS</h1>
+          <div>
+            <h1 className="font-display-lg text-display-lg text-primary tracking-tight">NexoriOS</h1>
+            <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest hidden lg:block">DELIVERY CONFIDENCE OPERATING PLATFORM</p>
+          </div>
           <SearchBar />
         </div>
         <div className="flex items-center gap-lg">
@@ -199,7 +202,7 @@ export default async function CommandCenter() {
               <div>
                 <div className="flex items-center justify-between mb-lg">
                   <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
-                    GOVERNANCE HEALTH SCORE
+                    DELIVERY CONFIDENCE SCORE
                   </h3>
                   <Icon name="verified" size={20} fill className="text-primary" />
                 </div>
@@ -211,7 +214,7 @@ export default async function CommandCenter() {
                     {summary.healthScore}
                   </span>
                   <span className="font-mono-technical text-body-bold text-primary">
-                    {summary.approvedGates}/{summary.totalGates} GATES
+                    {summary.approvedGates}/{summary.totalGates} CHECKS CLEARED
                   </span>
                 </div>
               </div>

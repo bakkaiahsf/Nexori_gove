@@ -10,19 +10,19 @@ const NAV_GROUPS = [
   {
     label: "GOVERNANCE",
     items: [
-      { href: "/orchestration", icon: "account_tree", label: "Orchestration" },
+      { href: "/orchestration", icon: "account_tree", label: "Delivery Orchestration" },
       { href: "/release-readiness", icon: "rocket_launch", label: "Release Readiness" },
       { href: "/", icon: "dashboard", label: "Command Center" },
       { href: "/cases", icon: "folder_open", label: "Cases" },
       { href: "/timeline", icon: "history", label: "Flight Recorder" },
-      { href: "/evidence", icon: "inventory_2", label: "Evidence" },
+      { href: "/evidence", icon: "inventory_2", label: "Evidence Hub" },
     ],
   },
   {
     label: "INTELLIGENCE",
     items: [
-      { href: "/intelligence", icon: "psychology", label: "Compliance Intelligence" },
-      { href: "/ai-control", icon: "security", label: "AI Control" },
+      { href: "/intelligence", icon: "psychology", label: "Assurance Intelligence" },
+      { href: "/ai-control", icon: "security", label: "Intelligence Controls" },
     ],
   },
   {
@@ -41,7 +41,7 @@ const NAV_GROUPS = [
       { href: "/admin", icon: "tune", label: "Configuration" },
       { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
       { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
-      { href: "/admin/gate-library", icon: "checklist", label: "Gate Library & Bundles" },
+      { href: "/admin/gate-library", icon: "checklist", label: "Assurance Packs" },
       { href: "/admin/policy", icon: "description", label: "Policy Corpus" },
     ],
   },

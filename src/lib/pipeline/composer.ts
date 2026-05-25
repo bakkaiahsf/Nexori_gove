@@ -81,6 +81,13 @@ export interface PipelineResult {
   inheritedApprovals: Array<{ slug: string; fromCaseId: string; rationale: string }>;
 }
 
+function phaseToStage(phase: string): string {
+  if (phase.includes("planning")) return "planning";
+  if (phase.includes("pre-prod") || phase.includes("pre_prod")) return "pre-prod";
+  if (phase.includes("deploy")) return "deployment";
+  return "development";
+}
+
 export async function composeAdaptivePipeline(
   caseId: string,
   riskScore: GovernanceRiskScore,
@@ -89,6 +96,7 @@ export async function composeAdaptivePipeline(
   opts: {
     regulatoryFrameworks?: string[];
     jurisdiction?: string;
+    phase?: string;
   } = {}
 ): Promise<PipelineResult> {
   const intensity = riskScore.intensity as IntensityLevel;
@@ -210,6 +218,54 @@ export async function composeAdaptivePipeline(
     });
     gateDbIds.push(gate.id);
     order++;
+  }
+
+  // 4b. Apply gate bundles — add mandatory gates not already present
+  const bundleStage = phaseToStage(opts.phase ?? "change-delivery");
+  const allBundles = await prisma.gateBundle.findMany({
+    where: { stage: bundleStage, OR: [{ projectId }, { projectId: null }] },
+  });
+  const applicableBundles = allBundles.filter(
+    (b) =>
+      b.frameworks.length === 0 ||
+      regulatoryFrameworks.some((f) => b.frameworks.includes(f))
+  );
+  const existingSlugs = new Set(gatesIncluded.map((g) => g.slug));
+
+  for (const bundle of applicableBundles) {
+    for (const slug of bundle.gateSlugs) {
+      if (existingSlugs.has(slug)) continue;
+      const gateDef = await prisma.gateDefinition.findUnique({ where: { slug }, select: { id: true, name: true, description: true, slug: true, enabled: true, approverRoles: true } });
+      if (!gateDef || !gateDef.enabled) continue;
+
+      const gate = await prisma.governanceGate.create({
+        data: {
+          caseId,
+          name: gateDef.name,
+          description: gateDef.description,
+          order,
+          required: true,
+          status: GateStatus.PENDING,
+          definitionSlug: gateDef.slug,
+        },
+      });
+
+      const reviewer = await routeApproval(gateDef, context, jurisdiction);
+      await prisma.approvalRequest.create({
+        data: {
+          gateId: gate.id,
+          status: "PENDING",
+          notes: reviewer
+            ? `[Bundle: ${bundle.name}] Routed to ${reviewer.name ?? reviewer.email} (${reviewer.source})`
+            : `[Bundle: ${bundle.name}] Pending reviewer assignment`,
+        },
+      });
+
+      gatesIncluded.push({ slug: gateDef.slug, gateId: gate.id, order, reason: `Bundle: ${bundle.name}` });
+      gateDbIds.push(gate.id);
+      existingSlugs.add(slug);
+      order++;
+    }
   }
 
   const totalGateCount = gatesIncluded.length;

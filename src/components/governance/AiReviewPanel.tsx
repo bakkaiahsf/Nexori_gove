@@ -26,7 +26,7 @@ export default function AiReviewPanel({
   caseId,
   gateId,
   gateName,
-  triggerLabel = "AI Review — What's Missing?",
+  triggerLabel = "Readiness Advisor — What's Missing?",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -77,7 +77,7 @@ export default function AiReviewPanel({
             psychology
           </span>
           <span className="font-label-caps text-label-caps text-primary tracking-widest text-[10px]">
-            AI GOVERNANCE REVIEWER
+            READINESS ADVISOR
           </span>
           {gateName && (
             <span className="font-mono-technical text-[10px] text-on-surface-variant">
@@ -126,7 +126,7 @@ export default function AiReviewPanel({
 
       <div className="px-lg py-xs border-t border-border-muted">
         <p className="font-mono-technical text-[9px] text-on-surface-variant">
-          AI_REVIEW · SOURCE: CASE_CONTEXT + EVIDENCE_ITEMS · LOGGED AS AI_USAGE_EVENT
+          READINESS ADVISOR · SOURCE: CASE_CONTEXT + EVIDENCE_ITEMS · LOGGED AS AI_USAGE_EVENT
         </p>
       </div>
     </div>

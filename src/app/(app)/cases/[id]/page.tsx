@@ -4,6 +4,7 @@ import Link from "next/link";
 import { GateStatus } from "@prisma/client";
 import GateActions from "@/components/governance/GateActions";
 import { computeDeliveryConfidence } from "@/lib/governance/confidence";
+import AiReviewPanel from "@/components/governance/AiReviewPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -194,8 +195,8 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                 {confidence.label}
               </p>
               <p className="font-mono-technical text-[11px] text-on-surface-variant mt-xs">
-                DELIVERY CONFIDENCE · {approvedGates}/{totalActive} GATES CLEARED
-                {adaptivePipeline?.reducedFromBaseline ? ` · ${adaptivePipeline.reducedFromBaseline} GATES SAVED BY AI` : ""}
+                DELIVERY CONFIDENCE · {approvedGates}/{totalActive} CHECKS CLEARED
+                {adaptivePipeline?.reducedFromBaseline ? ` · ${adaptivePipeline.reducedFromBaseline} CHECKS OPTIMIZED BY AI` : ""}
               </p>
             </div>
             <div className="flex gap-md shrink-0">
@@ -249,7 +250,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   <div className="px-xl py-md border-b border-border-muted flex items-center gap-md">
                     <Icon name="hub" size={14} />
                     <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                      GOVERNANCE CONTEXT
+                      DELIVERY CONTEXT
                     </span>
                     <span className="ml-auto font-mono-technical text-[9px] text-on-surface-variant">
                       ENRICHED {new Date(context.enrichedAt).toLocaleDateString("en-GB")}
@@ -327,7 +328,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   <div className="px-xl py-md border-b border-border-muted flex items-center gap-md">
                     <Icon name="analytics" size={14} />
                     <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                      GOVERNANCE RISK SCORE
+                      RISK ASSESSMENT
                     </span>
                     <span className="ml-auto font-mono-technical text-[10px] text-primary font-bold">
                       {Math.round(riskScore.compositeScore)}/100
@@ -424,11 +425,11 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   <div className="px-xl py-md border-b border-border-muted flex items-center gap-md">
                     <Icon name="account_tree" size={14} />
                     <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                      ADAPTIVE PIPELINE COMPOSITION
+                      PIPELINE OPTIMIZATION
                     </span>
                     {adaptivePipeline.reducedFromBaseline > 0 && (
                       <span className="ml-auto font-mono-technical text-[10px] text-primary">
-                        -{adaptivePipeline.reducedFromBaseline} GATES SAVED
+                        -{adaptivePipeline.reducedFromBaseline} CHECKS OPTIMIZED
                       </span>
                     )}
                   </div>
@@ -436,8 +437,8 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                     {/* Summary */}
                     <div className="grid grid-cols-3 gap-md">
                       {[
-                        { label: "Gates Active", value: String(adaptivePipeline.totalGateCount) },
-                        { label: "Gates Skipped", value: String(gatesSkipped.length) },
+                        { label: "Checks Active", value: String(adaptivePipeline.totalGateCount) },
+                        { label: "Checks Optimized", value: String(gatesSkipped.length) },
                         { label: "Approvals Inherited", value: String(inheritedApprovals.length) },
                       ].map((s) => (
                         <div key={s.label} className="text-center border border-border-muted p-md">
@@ -455,7 +456,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                     {gatesIncluded.length > 0 && (
                       <div>
                         <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">
-                          INCLUDED GATES
+                          INCLUDED CHECKS
                         </p>
                         <div className="space-y-xs">
                           {gatesIncluded.map((g) => (
@@ -488,7 +489,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                     {gatesSkipped.length > 0 && (
                       <div>
                         <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-sm">
-                          SKIPPED GATES
+                          OPTIMIZED CHECKS
                         </p>
                         <div className="space-y-xs">
                           {gatesSkipped.map((g) => (
@@ -563,7 +564,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   <div className="flex items-center gap-md mb-md">
                     <Icon name="trending_down" size={14} className="text-primary" />
                     <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                      GOVERNANCE SAVINGS
+                      EFFICIENCY SAVINGS
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-md text-center">
@@ -594,11 +595,28 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   </div>
                   {gatesSkipped.length > 0 && (
                     <p className="font-mono-technical text-[10px] text-primary mt-md border-t border-border-muted pt-md">
-                      AI REMOVED {gatesSkipped.length} NON-APPLICABLE GATE{gatesSkipped.length !== 1 ? "S" : ""} FROM PIPELINE
+                      AI REMOVED {gatesSkipped.length} NON-APPLICABLE CHECK{gatesSkipped.length !== 1 ? "S" : ""} FROM READINESS FLOW
                     </p>
                   )}
                 </section>
               )}
+
+              {/* ── Readiness Advisor ── */}
+              <section className="bg-surface border border-primary/20 p-lg">
+                <div className="flex items-center gap-md mb-md">
+                  <Icon name="psychology" size={14} className="text-primary" />
+                  <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
+                    READINESS ADVISOR
+                  </span>
+                  <span className="ml-auto font-mono-technical text-[9px] text-on-surface-variant">
+                    AI · CASE CONTEXT
+                  </span>
+                </div>
+                <AiReviewPanel
+                  caseId={params.id}
+                  triggerLabel="Analyse readiness — what's missing?"
+                />
+              </section>
 
               {/* ── Gate Pipeline ── */}
               <section className="bg-surface border border-border-muted">
@@ -606,7 +624,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   <div className="flex items-center gap-md">
                     <Icon name="checklist" size={14} />
                     <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                      GATE PIPELINE
+                      READINESS FLOW
                     </span>
                   </div>
                   <span className="font-mono-technical text-[10px] text-primary">
@@ -689,7 +707,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                   <div className="px-xl py-md border-b border-border-muted flex items-center gap-md">
                     <Icon name="policy" size={14} />
                     <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                      GOVERNANCE WAIVERS
+                      RISK ACCEPTANCES
                     </span>
                     <span className="ml-auto font-mono-technical text-[10px] text-tertiary">
                       {waivers.length}
@@ -839,7 +857,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
           )}
           {adaptivePipeline && adaptivePipeline.reducedFromBaseline > 0 && (
             <span className="text-primary">
-              {adaptivePipeline.reducedFromBaseline} GATES SAVED BY ADAPTIVE ENGINE
+              {adaptivePipeline.reducedFromBaseline} CHECKS OPTIMIZED BY ADAPTIVE ENGINE
             </span>
           )}
         </div>
