@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { computeDrift } from "@/lib/governance/drift";
 import IntelligenceQueryPanel from "@/components/governance/IntelligenceQueryPanel";
 import GuardrailsPushPanel from "./GuardrailsPushPanel";
 
@@ -73,6 +74,7 @@ export default async function ComplianceIntelligencePage() {
   }> = [];
   let firstProject: { id: string; key: string; name: string } | undefined;
   let aiSetting: { mode: string } | null = null;
+  let drift: Awaited<ReturnType<typeof computeDrift>> | null = null;
   let dbError = false;
 
   try {
@@ -124,12 +126,16 @@ export default async function ComplianceIntelligencePage() {
       ]);
 
     firstProject = projects[0];
-    aiSetting = firstProject
-      ? await prisma.aIControlSetting.findUnique({
-          where: { projectId: firstProject.id },
-          select: { mode: true },
-        })
-      : null;
+    const projectIds = projects.map((p) => p.id);
+    [aiSetting, drift] = await Promise.all([
+      firstProject
+        ? prisma.aIControlSetting.findUnique({
+            where: { projectId: firstProject.id },
+            select: { mode: true },
+          })
+        : Promise.resolve(null),
+      projectIds.length > 0 ? computeDrift(projectIds) : Promise.resolve(null),
+    ]);
   } catch {
     dbError = true;
   }
@@ -262,6 +268,70 @@ export default async function ComplianceIntelligencePage() {
               mergedAt: p.mergedAt?.toISOString() ?? null,
             }))}
           />
+
+          {/* Governance Health Monitor */}
+          {drift && (
+            <div className="bg-surface border border-border-muted">
+              <div className="px-xl py-lg border-b border-border-muted flex items-center justify-between">
+                <h2 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest text-[10px]">
+                  GOVERNANCE HEALTH MONITOR
+                </h2>
+                <div className="flex items-center gap-md font-mono-technical text-[10px]">
+                  {drift.highCount > 0 && (
+                    <span className="text-critical">{drift.highCount} HIGH</span>
+                  )}
+                  {drift.mediumCount > 0 && (
+                    <span className="text-tertiary">{drift.mediumCount} MEDIUM</span>
+                  )}
+                  {drift.lowCount > 0 && (
+                    <span className="text-on-surface-variant">{drift.lowCount} LOW</span>
+                  )}
+                  {drift.isClean && (
+                    <span className="text-primary">ALL CLEAR</span>
+                  )}
+                </div>
+              </div>
+              {drift.isClean ? (
+                <div className="px-xl py-lg">
+                  <p className="font-mono-technical text-[11px] text-primary">
+                    No governance drift detected. All evidence, approvals, and waivers are current.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border-muted">
+                  {drift.signals.map((signal, i) => {
+                    const sevCls =
+                      signal.severity === "HIGH"
+                        ? "text-critical border-critical"
+                        : signal.severity === "MEDIUM"
+                          ? "text-tertiary border-tertiary"
+                          : "text-on-surface-variant border-border-muted";
+                    return (
+                      <div key={i} className="px-xl py-md flex items-start gap-md">
+                        <span className={`mt-px font-mono-technical text-[9px] border px-1.5 py-0.5 shrink-0 ${sevCls}`}>
+                          {signal.severity}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body-bold text-body-bold text-on-surface text-[12px]">
+                            {signal.message}
+                          </p>
+                          {signal.caseTitle && (
+                            <p className="font-mono-technical text-[10px] text-on-surface-variant mt-xs">
+                              CASE: {signal.caseTitle}
+                              {signal.daysSince !== undefined && ` · ${signal.daysSince} days ago`}
+                            </p>
+                          )}
+                        </div>
+                        <span className="font-mono-technical text-[9px] text-on-surface-variant shrink-0">
+                          {signal.type.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Policy Document Corpus */}
           <div className="bg-surface border border-border-muted">

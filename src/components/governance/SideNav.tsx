@@ -30,13 +30,18 @@ const NAV_GROUPS = [
     items: [
       { href: "/admin/programs", icon: "account_tree", label: "Programs" },
       { href: "/admin/projects", icon: "folder_special", label: "Projects" },
+      { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
+      { href: "/admin/connectors", icon: "hub", label: "Connectors" },
+      { href: "/admin/experts", icon: "group", label: "Expert Profiles" },
+    ],
+  },
+  {
+    label: "PLATFORM CONFIG",
+    items: [
       { href: "/admin", icon: "tune", label: "Configuration" },
       { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
       { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
-      { href: "/admin/connectors", icon: "hub", label: "Connectors" },
       { href: "/admin/gate-library", icon: "checklist", label: "Gate Library & Bundles" },
-      { href: "/admin/templates", icon: "category", label: "Gov. Templates" },
-      { href: "/admin/experts", icon: "group", label: "Expert Profiles" },
       { href: "/admin/policy", icon: "description", label: "Policy Corpus" },
     ],
   },

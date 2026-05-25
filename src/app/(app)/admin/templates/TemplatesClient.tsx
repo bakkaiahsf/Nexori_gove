@@ -23,11 +23,31 @@ function Icon({
   );
 }
 
-const EFFORT_CFG: Record<string, { cls: string; label: string }> = {
-  LOW: { cls: "border-primary/40 text-primary/80", label: "LOW EFFORT" },
-  MEDIUM: { cls: "border-tertiary/40 text-tertiary/80", label: "MEDIUM EFFORT" },
-  HIGH: { cls: "border-critical/40 text-critical/80", label: "HIGH EFFORT" },
-  CUSTOM: { cls: "border-border-muted text-on-surface-variant", label: "CUSTOM" },
+const EFFORT_CFG: Record<string, { cls: string; label: string; tier: string; impact: string }> = {
+  LOW: {
+    cls: "border-primary/40 text-primary/80",
+    label: "AGILE LITE",
+    tier: "Minimal Governance",
+    impact: "Fast-track delivery · reduced approval overhead",
+  },
+  MEDIUM: {
+    cls: "border-tertiary/40 text-tertiary/80",
+    label: "STANDARD",
+    tier: "Balanced Governance",
+    impact: "Enterprise-grade assurance · proportional controls",
+  },
+  HIGH: {
+    cls: "border-critical/40 text-critical/80",
+    label: "REGULATED",
+    tier: "Enhanced Governance",
+    impact: "Maximum regulatory coverage · full audit trail",
+  },
+  CUSTOM: {
+    cls: "border-border-muted text-on-surface-variant",
+    label: "CUSTOM",
+    tier: "Custom Governance",
+    impact: "Admin-configured gates and approval chains",
+  },
 };
 
 const GATE_CATEGORY_COLORS: Record<string, string> = {
@@ -43,11 +63,11 @@ const GATE_CATEGORY_COLORS: Record<string, string> = {
 function TemplateCard({ template }: { template: TemplateRow }) {
   const [expanded, setExpanded] = useState(false);
   const effort = EFFORT_CFG[template.effort] ?? EFFORT_CFG.MEDIUM;
-  const totalGateHints = template.stages.reduce((acc, s) => acc + (s.gateHints?.length ?? 0), 0);
+  const stageCount = template.stages.length;
 
   return (
     <div className="bg-surface border border-border-muted hover:border-primary/40 transition-colors">
-      <button onClick={() => setExpanded((v) => !v)} className="w-full text-left p-lg space-y-md">
+      <button onClick={() => setExpanded((v) => !v)} className="w-full text-left p-lg">
         <div className="flex items-start gap-md">
           <div className="w-9 h-9 bg-surface-container-high border border-border-muted flex items-center justify-center shrink-0">
             <Icon
@@ -57,7 +77,7 @@ function TemplateCard({ template }: { template: TemplateRow }) {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-sm flex-wrap">
+            <div className="flex items-center gap-sm flex-wrap mb-xs">
               <p className="font-body-bold text-body-bold text-on-surface text-[14px]">
                 {template.name}
               </p>
@@ -66,19 +86,44 @@ function TemplateCard({ template }: { template: TemplateRow }) {
                   BUILT-IN
                 </span>
               )}
-              <span className={`px-1.5 py-0.5 font-mono-technical text-[8px] border ${effort.cls}`}>
+              <span className={`px-1.5 py-0.5 font-mono-technical text-[8px] border font-bold ${effort.cls}`}>
                 {effort.label}
               </span>
             </div>
-            <p className="font-mono-technical text-[10px] text-on-surface-variant mt-xs leading-snug">
-              {template.description}
+            <p className="font-mono-technical text-[10px] text-on-surface-variant leading-snug mb-md">
+              {template.description ?? effort.tier}
             </p>
+            {/* Business outcome row */}
+            <div className="flex items-center gap-md flex-wrap">
+              <span className="flex items-center gap-xs font-mono-technical text-[9px] text-primary">
+                <Icon name="trending_up" size={12} className="text-primary" />
+                {effort.impact}
+              </span>
+              {stageCount > 0 && (
+                <span className="font-mono-technical text-[9px] text-on-surface-variant">
+                  {stageCount} delivery stage{stageCount !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-sm shrink-0">
-            {totalGateHints > 0 && (
-              <span className="font-mono-technical text-[9px] text-on-surface-variant">
-                ~{totalGateHints} gates
-              </span>
+            {/* Regulatory frameworks covered */}
+            {template.suggestedFrameworks.length > 0 && (
+              <div className="flex gap-xs">
+                {template.suggestedFrameworks.slice(0, 3).map((f) => (
+                  <span
+                    key={f}
+                    className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-primary/30 text-primary/70"
+                  >
+                    {f.replace(/_/g, " ")}
+                  </span>
+                ))}
+                {template.suggestedFrameworks.length > 3 && (
+                  <span className="font-mono-technical text-[8px] text-on-surface-variant">
+                    +{template.suggestedFrameworks.length - 3}
+                  </span>
+                )}
+              </div>
             )}
             <Icon
               name={expanded ? "expand_less" : "expand_more"}
@@ -87,79 +132,45 @@ function TemplateCard({ template }: { template: TemplateRow }) {
             />
           </div>
         </div>
-
-        {/* Tags */}
-        <div className="flex gap-xs flex-wrap">
-          {template.suggestedFrameworks.map((f) => (
-            <span
-              key={f}
-              className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant"
-            >
-              {f.replace(/_/g, " ")}
-            </span>
-          ))}
-          {template.suggestedDomains.map((d) => (
-            <span
-              key={d}
-              className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant capitalize"
-            >
-              {d}
-            </span>
-          ))}
-        </div>
       </button>
 
-      {expanded && template.stages.length > 0 && (
+      {expanded && (
         <div className="px-lg pb-lg border-t border-border-muted pt-md space-y-md">
           <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
-            GATE PIPELINE — STAGE BREAKDOWN
+            GOVERNANCE INTENSITY DETAIL
           </p>
-          <div className="space-y-sm">
-            {template.stages.map((s) => (
-              <div key={s.stage} className="flex gap-lg">
-                <div className="w-[120px] shrink-0">
-                  <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
-                    {s.stage.toUpperCase()}
-                  </p>
-                </div>
-                <div className="flex-1 space-y-xs">
-                  {s.gateCategories.length > 0 && (
-                    <div className="flex gap-xs flex-wrap">
-                      {s.gateCategories.map((cat) => (
-                        <span
-                          key={cat}
-                          className={`px-1.5 py-0.5 font-mono-technical text-[8px] border ${GATE_CATEGORY_COLORS[cat] ?? "border-border-muted text-on-surface-variant"}`}
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {s.gateHints && s.gateHints.length > 0 && (
-                    <div className="flex gap-xs flex-wrap">
-                      {s.gateHints.map((hint) => (
-                        <span
-                          key={hint}
-                          className="font-mono-technical text-[9px] text-on-surface-variant"
-                        >
-                          {hint}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+          <div className="grid grid-cols-2 gap-md">
+            <div className="space-y-xs">
+              <p className="font-mono-technical text-[9px] text-on-surface-variant">INTENSITY TIER</p>
+              <p className="font-body-bold text-body-bold text-on-surface text-[13px]">{effort.tier}</p>
+            </div>
+            <div className="space-y-xs">
+              <p className="font-mono-technical text-[9px] text-on-surface-variant">DELIVERY DOMAINS</p>
+              <div className="flex gap-xs flex-wrap">
+                {template.suggestedDomains.length > 0
+                  ? template.suggestedDomains.map((d) => (
+                      <span key={d} className={`px-1.5 py-0.5 font-mono-technical text-[8px] border ${GATE_CATEGORY_COLORS[d] ?? "border-border-muted text-on-surface-variant"} capitalize`}>
+                        {d}
+                      </span>
+                    ))
+                  : <span className="font-mono-technical text-[9px] text-on-surface-variant">All domains</span>
+                }
               </div>
-            ))}
+            </div>
+            <div className="col-span-2 space-y-xs">
+              <p className="font-mono-technical text-[9px] text-on-surface-variant">REGULATORY FRAMEWORKS COVERED</p>
+              <div className="flex gap-xs flex-wrap">
+                {template.suggestedFrameworks.length > 0
+                  ? template.suggestedFrameworks.map((f) => (
+                      <span key={f} className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-primary/30 text-primary/70">
+                        {f.replace(/_/g, " ")}
+                      </span>
+                    ))
+                  : <span className="font-mono-technical text-[9px] text-on-surface-variant">Framework-agnostic</span>
+                }
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-
-      {expanded && template.stages.length === 0 && (
-        <div className="px-lg pb-lg border-t border-border-muted pt-md">
-          <p className="font-mono-technical text-[10px] text-on-surface-variant">
-            No stages defined. Gates are selected ad-hoc from the Gate Library when governance is
-            activated.
-          </p>
         </div>
       )}
     </div>
@@ -206,7 +217,7 @@ function NewTemplateForm({ onClose }: { onClose: () => void }) {
   return (
     <div className="bg-surface border border-primary/30 p-lg space-y-md max-w-[600px]">
       <div className="flex items-center justify-between">
-        <p className="font-mono-technical text-[10px] text-primary tracking-widest">NEW TEMPLATE</p>
+        <p className="font-mono-technical text-[10px] text-primary tracking-widest">NEW GOVERNANCE PROFILE</p>
         <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface">
           <Icon name="close" size={14} />
         </button>
@@ -262,7 +273,7 @@ function NewTemplateForm({ onClose }: { onClose: () => void }) {
           disabled={saving || !name.trim()}
           className="px-xl py-sm bg-primary text-background font-mono-technical text-[10px] hover:bg-primary/90 disabled:opacity-40"
         >
-          {saving ? "CREATING…" : "CREATE TEMPLATE"}
+          {saving ? "CREATING…" : "CREATE PROFILE"}
         </button>
       </div>
     </div>
@@ -276,7 +287,7 @@ export default function TemplatesClient({ templates }: { templates: TemplateRow[
     <div className="space-y-lg">
       <div className="flex items-center gap-md">
         <p className="font-mono-technical text-[10px] text-on-surface-variant">
-          {templates.length} template{templates.length !== 1 ? "s" : ""} configured
+          {templates.length} profile{templates.length !== 1 ? "s" : ""} configured
         </p>
         <div className="flex-1" />
         <button
@@ -284,7 +295,7 @@ export default function TemplatesClient({ templates }: { templates: TemplateRow[
           className="flex items-center gap-sm px-lg py-sm bg-primary text-background font-mono-technical text-[10px] hover:bg-primary/90 transition-colors"
         >
           <Icon name="add" size={12} className="text-background" />
-          NEW TEMPLATE
+          NEW PROFILE
         </button>
       </div>
 

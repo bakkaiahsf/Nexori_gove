@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { GateStatus } from "@prisma/client";
 import GateActions from "@/components/governance/GateActions";
+import { computeDeliveryConfidence } from "@/lib/governance/confidence";
 
 export const dynamic = "force-dynamic";
 
@@ -131,6 +132,17 @@ export default async function CaseDetail({ params }: { params: { id: string } })
 
   const approvedGates = governanceGates.filter((g) => g.status === GateStatus.APPROVED).length;
   const totalActive = governanceGates.filter((g) => !g.skipped).length;
+  const criticalRisks = governanceGates.filter((g) => g.status === GateStatus.REJECTED && !g.skipped).length;
+
+  const confidence = computeDeliveryConfidence({
+    approvedGates,
+    totalGates: totalActive,
+    compositeRiskScore: riskScore?.compositeScore ?? 0,
+    scoringConfidence: riskScore?.scoringConfidence ?? 0.5,
+    reducedFromBaseline: adaptivePipeline?.reducedFromBaseline ?? 0,
+    openCriticalRisks: criticalRisks,
+    waiverCount: waivers.filter((w) => w.status === "approved").length,
+  });
 
   return (
     <>
@@ -170,6 +182,34 @@ export default async function CaseDetail({ params }: { params: { id: string } })
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1200px] mx-auto space-y-lg">
+          {/* ── Delivery Confidence card ── */}
+          <div className={`border-2 p-lg flex items-center gap-xl ${confidence.cls}`}>
+            <div className={`w-14 h-14 border-2 flex items-center justify-center shrink-0 ${confidence.cls}`}>
+              <span className={`font-bold leading-none ${confidence.cls.split(" ")[0]}`} style={{ fontSize: 20 }}>
+                {confidence.score}%
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`font-mono-technical text-[18px] font-bold leading-none ${confidence.cls.split(" ")[0]}`}>
+                {confidence.label}
+              </p>
+              <p className="font-mono-technical text-[11px] text-on-surface-variant mt-xs">
+                DELIVERY CONFIDENCE · {approvedGates}/{totalActive} GATES CLEARED
+                {adaptivePipeline?.reducedFromBaseline ? ` · ${adaptivePipeline.reducedFromBaseline} GATES SAVED BY AI` : ""}
+              </p>
+            </div>
+            <div className="flex gap-md shrink-0">
+              {confidence.drivers.map((d) => (
+                <div key={d.label} className="text-right">
+                  <p className={`font-mono-technical text-[11px] font-bold ${d.positive ? "text-primary" : "text-critical"}`}>
+                    {d.value}
+                  </p>
+                  <p className="font-mono-technical text-[9px] text-on-surface-variant">{d.label.toUpperCase()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* ── Case title + metadata ── */}
           <div className="bg-surface border border-border-muted p-xl">
             <h1 className="font-headline-md text-headline-md text-on-surface mb-sm">

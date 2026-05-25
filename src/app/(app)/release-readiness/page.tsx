@@ -1,5 +1,7 @@
 import prisma from "@/lib/db";
 import { DEMO_PROJECT_KEY } from "@/lib/governance";
+import { computeDeliveryConfidence } from "@/lib/governance/confidence";
+import { computeDrift } from "@/lib/governance/drift";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -98,22 +100,40 @@ export default async function ReleaseReadinessPage() {
         },
         orderBy: { order: "asc" },
       },
-      riskScore: { select: { compositeScore: true, intensity: true } },
+      riskScore: { select: { compositeScore: true, intensity: true, scoringConfidence: true } },
+      adaptivePipeline: { select: { reducedFromBaseline: true } },
       context: { select: { environment: true, aiSystemInvolved: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  const enriched = cases.map((c) => ({
-    ...c,
-    readiness: computeReadiness(c.governanceGates),
-    approvedGates: c.governanceGates.filter((g) => g.status === "APPROVED" && !g.skipped).length,
-    totalActive: c.governanceGates.filter((g) => !g.skipped).length,
-    blockedGates: c.governanceGates.filter((g) => g.status === "REJECTED" && !g.skipped),
-    pendingGates: c.governanceGates.filter(
-      (g) => (g.status === "PENDING" || g.status === "OPEN") && !g.skipped
-    ),
-  }));
+  const [drift] = await Promise.all([computeDrift([project.id])]);
+
+  const enriched = cases.map((c) => {
+    const approvedGates = c.governanceGates.filter((g) => g.status === "APPROVED" && !g.skipped).length;
+    const totalActive = c.governanceGates.filter((g) => !g.skipped).length;
+    const criticalRisks = c.governanceGates.filter((g) => g.status === "REJECTED" && !g.skipped).length;
+    const conf = computeDeliveryConfidence({
+      approvedGates,
+      totalGates: totalActive,
+      compositeRiskScore: c.riskScore?.compositeScore ?? 0,
+      scoringConfidence: c.riskScore?.scoringConfidence ?? 0.5,
+      reducedFromBaseline: c.adaptivePipeline?.reducedFromBaseline ?? 0,
+      openCriticalRisks: criticalRisks,
+      waiverCount: 0,
+    });
+    return {
+      ...c,
+      readiness: computeReadiness(c.governanceGates),
+      approvedGates,
+      totalActive,
+      blockedGates: c.governanceGates.filter((g) => g.status === "REJECTED" && !g.skipped),
+      pendingGates: c.governanceGates.filter(
+        (g) => (g.status === "PENDING" || g.status === "OPEN") && !g.skipped
+      ),
+      confidence: conf,
+    };
+  });
 
   const goCases = enriched.filter((c) => c.readiness === "GO").length;
   const noGoCases = enriched.filter((c) => c.readiness === "NO_GO").length;
@@ -144,6 +164,21 @@ export default async function ReleaseReadinessPage() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1000px] mx-auto space-y-xl">
+          {/* Drift warning banner */}
+          {drift.highCount > 0 && (
+            <div className="border border-critical bg-critical/5 px-xl py-lg flex items-start gap-lg">
+              <span className="material-symbols-outlined text-critical shrink-0 leading-none" style={{ fontSize: 20 }}>warning</span>
+              <div>
+                <p className="font-mono-technical text-[11px] text-critical font-bold">
+                  GOVERNANCE DRIFT DETECTED — {drift.highCount} HIGH SEVERITY SIGNAL{drift.highCount !== 1 ? "S" : ""}
+                </p>
+                <p className="font-mono-technical text-[10px] text-on-surface-variant mt-xs">
+                  {drift.signals.filter((s) => s.severity === "HIGH").slice(0, 2).map((s) => s.message).join(" · ")}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Overall verdict */}
           <div className={`border-2 p-xl flex items-center gap-xl ${overall.cls} ${overall.bg}`}>
             <div
@@ -235,13 +270,16 @@ export default async function ReleaseReadinessPage() {
                           {c.context?.environment?.toUpperCase() ?? "—"}
                         </p>
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="text-right shrink-0 space-y-xs">
                         <p className="font-mono-technical text-[20px] font-bold text-on-surface leading-none">
                           {c.approvedGates}/{c.totalActive}
                         </p>
                         <p className="font-mono-technical text-[9px] text-on-surface-variant">
                           GATES
                         </p>
+                        <span className={`inline-block px-2 py-0.5 font-mono-technical text-[9px] border ${c.confidence.cls}`}>
+                          {c.confidence.score}% {c.confidence.label}
+                        </span>
                       </div>
                     </div>
 

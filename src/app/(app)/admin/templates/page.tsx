@@ -58,12 +58,12 @@ export default async function TemplatesPage() {
             ← ADMIN
           </Link>
           <h1 className="font-headline-md text-headline-md text-on-surface">
-            Governance Templates
+            Governance Profiles
           </h1>
         </div>
         <div className="flex items-center gap-md font-mono-technical text-[10px]">
           <span className="px-2 py-1 bg-primary/10 border border-primary text-primary">
-            {templates.length} TEMPLATES
+            {templates.length} PROFILES
           </span>
           <span className="px-2 py-1 border border-border-muted text-on-surface-variant">
             {gateCount} GATES IN LIBRARY
@@ -76,18 +76,14 @@ export default async function TemplatesPage() {
           {/* Explanation */}
           <div className="bg-surface border border-primary/20 p-xl">
             <p className="font-mono-technical text-[10px] text-primary tracking-widest mb-sm">
-              HOW TEMPLATES WORK
+              WHAT ARE GOVERNANCE PROFILES?
             </p>
             <p className="font-body-base text-body-base text-on-surface-variant leading-relaxed text-[12px]">
-              Templates define <strong>which gate categories</strong> apply at each delivery stage
-              (Planning, Development, Testing, Release). When a governance case is activated —
-              either via Jira import or tool webhook — the AI composer selects specific gates from
-              the{" "}
-              <a href="/admin/gate-library" className="text-primary underline">
-                Gate Library
-              </a>{" "}
-              that match the template&apos;s categories and the change characteristics. Nothing is
-              hardcoded — the gate pipeline is always composed dynamically by platform intelligence.
+              Profiles set the <strong>governance intensity</strong> for a delivery. Choose a profile
+              based on your change&apos;s risk level — the platform AI automatically selects the right gates,
+              routes approvals, and adapts the pipeline to the specific context. No manual gate
+              configuration required. Higher intensity profiles unlock stronger regulatory assurance and
+              audit evidence coverage.
             </p>
           </div>
 

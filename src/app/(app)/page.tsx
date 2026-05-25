@@ -7,6 +7,7 @@ import {
   getEscalations,
   DEMO_PROJECT_KEY,
 } from "@/lib/governance";
+import { computeDeliveryConfidence } from "@/lib/governance/confidence";
 import HeatmapClient from "@/components/governance/HeatmapClient";
 import StatusBarClient from "@/components/governance/StatusBarClient";
 import ApproveButton from "@/components/governance/ApproveButton";
@@ -39,8 +40,15 @@ function Icon({
 const R = 44;
 const CIRC = 2 * Math.PI * R;
 
-function DeliveryGauge({ pct }: { pct: number }) {
-  const offset = CIRC * (1 - pct / 100);
+const VERDICT_STROKE: Record<string, string> = {
+  READY: "#50dbcb",
+  CONDITIONAL: "#f59e0b",
+  BLOCKED: "#ef4444",
+};
+
+function DeliveryGauge({ score, verdict }: { score: number; verdict: string }) {
+  const offset = CIRC * (1 - score / 100);
+  const stroke = VERDICT_STROKE[verdict] ?? "#50dbcb";
   return (
     <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
@@ -50,13 +58,13 @@ function DeliveryGauge({ pct }: { pct: number }) {
           cy="48"
           r={R}
           fill="transparent"
-          stroke="#50dbcb"
+          stroke={stroke}
           strokeDasharray={CIRC}
           strokeDashoffset={offset}
           strokeWidth="4"
         />
       </svg>
-      <span className="absolute font-stat-lg text-stat-lg text-on-surface">{pct}%</span>
+      <span className="absolute font-stat-lg text-stat-lg text-on-surface">{score}%</span>
     </div>
   );
 }
@@ -88,15 +96,51 @@ export default async function CommandCenter() {
     );
   }
 
-  const [summary, approvals, escalations] = await Promise.all([
+  const [summary, approvals, escalations, activeCases] = await Promise.all([
     getProjectSummary(project.id),
     getPendingApprovals(project.id),
     getEscalations(project.id),
+    prisma.governanceCase.findMany({
+      where: { projectId: project.id, status: "active" },
+      select: {
+        id: true,
+        riskScore: { select: { compositeScore: true, scoringConfidence: true } },
+        adaptivePipeline: { select: { reducedFromBaseline: true } },
+      },
+    }),
   ]);
 
-  // Delivery confidence: approved gates as % of total
-  const deliveryPct =
-    summary.totalGates > 0 ? Math.round((summary.approvedGates / summary.totalGates) * 100) : 0;
+  const activeCaseIds = activeCases.map((c) => c.id);
+  const waiverCount =
+    activeCaseIds.length > 0
+      ? await prisma.governanceWaiver.count({
+          where: { caseId: { in: activeCaseIds }, status: "approved" },
+        })
+      : 0;
+
+  const riskScores = activeCases.map((c) => c.riskScore).filter(Boolean);
+  const avgCompositeScore =
+    riskScores.length > 0
+      ? riskScores.reduce((sum, r) => sum + r!.compositeScore, 0) / riskScores.length
+      : 0;
+  const avgScoringConfidence =
+    riskScores.length > 0
+      ? riskScores.reduce((sum, r) => sum + r!.scoringConfidence, 0) / riskScores.length
+      : 0.5;
+  const totalGatesSaved = activeCases.reduce(
+    (sum, c) => sum + (c.adaptivePipeline?.reducedFromBaseline ?? 0),
+    0
+  );
+
+  const confidence = computeDeliveryConfidence({
+    approvedGates: summary.approvedGates,
+    totalGates: summary.totalGates,
+    compositeRiskScore: avgCompositeScore,
+    scoringConfidence: avgScoringConfidence,
+    reducedFromBaseline: totalGatesSaved,
+    openCriticalRisks: summary.criticalRisks,
+    waiverCount,
+  });
 
   return (
     <>
@@ -244,48 +288,64 @@ export default async function CommandCenter() {
               className="bg-surface border border-border-muted p-xl flex flex-col justify-between"
               style={{ minHeight: 192 }}
             >
-              <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
-                DELIVERY CONFIDENCE
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                  DELIVERY CONFIDENCE
+                </h3>
+                <span className={`px-2 py-0.5 font-mono-technical text-[10px] border ${confidence.cls}`}>
+                  {confidence.label}
+                </span>
+              </div>
               <div className="flex items-center gap-lg mt-lg">
-                <DeliveryGauge pct={deliveryPct} />
+                <DeliveryGauge score={confidence.score} verdict={confidence.verdict} />
                 <div className="flex-1 space-y-sm">
                   <p className="font-mono-technical text-[11px] text-on-surface-variant uppercase">
                     Key Drivers
                   </p>
                   <ul className="space-y-xs">
-                    <li className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono-technical text-on-surface-variant">
-                        GATES APPROVED
-                      </span>
-                      <span
-                        className={`text-[10px] font-mono-technical ${deliveryPct >= 60 ? "text-primary" : "text-critical"}`}
-                      >
-                        {summary.approvedGates}/{summary.totalGates}
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono-technical text-on-surface-variant">
-                        OPEN RISKS
-                      </span>
-                      <span
-                        className={`text-[10px] font-mono-technical ${summary.criticalRisks > 0 ? "text-critical" : "text-tertiary"}`}
-                      >
-                        {summary.openRisks}
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono-technical text-on-surface-variant">
-                        EVIDENCE
-                      </span>
-                      <span className="text-[10px] font-mono-technical text-primary">
-                        {summary.evidenceMapped} MAPPED
-                      </span>
-                    </li>
+                    {confidence.drivers.map((d) => (
+                      <li key={d.label} className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono-technical text-on-surface-variant">
+                          {d.label.toUpperCase()}
+                        </span>
+                        <span
+                          className={`text-[10px] font-mono-technical ${d.positive ? "text-primary" : "text-critical"}`}
+                        >
+                          {d.value}
+                        </span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
             </div>
+
+            {/* Governance Efficiency */}
+            {totalGatesSaved > 0 && (
+              <div className="bg-surface border border-primary/30 p-xl">
+                <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest mb-md">
+                  GOVERNANCE EFFICIENCY
+                </h3>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <span className="font-bold text-on-surface leading-none" style={{ fontSize: 36 }}>
+                      {totalGatesSaved}
+                    </span>
+                    <p className="font-mono-technical text-[10px] text-primary mt-xs">
+                      GATES SAVED BY AI OPTIMISATION
+                    </p>
+                  </div>
+                  <div className="text-right space-y-xs">
+                    <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                      ≈{totalGatesSaved * 2}h RETURNED
+                    </p>
+                    <p className="font-mono-technical text-[10px] text-primary">
+                      {summary.activeCases} ACTIVE CASES
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* AI Governance Unit */}
             <div className="bg-surface-elevated border border-primary p-xl relative overflow-hidden">

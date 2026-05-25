@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { DEMO_PROJECT_KEY } from "@/lib/governance";
+import { computeDeliveryConfidence } from "@/lib/governance/confidence";
 import { GateStatus } from "@prisma/client";
 import Link from "next/link";
 import NewCaseButton from "@/components/governance/NewCaseButton";
@@ -62,8 +63,8 @@ export default async function Cases() {
         select: { id: true, status: true, name: true, order: true, skipped: true },
         orderBy: { order: "asc" },
       },
-      riskScore: { select: { compositeScore: true, intensity: true } },
-      evidenceItems: { select: { id: true } },
+      riskScore: { select: { compositeScore: true, intensity: true, scoringConfidence: true } },
+      adaptivePipeline: { select: { reducedFromBaseline: true } },
       _count: { select: { evidenceItems: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -109,11 +110,21 @@ export default async function Cases() {
               const rejected = gates.filter((g) => g.status === GateStatus.REJECTED).length;
               const pending = gates.filter((g) => g.status === "PENDING" && !g.skipped).length;
               const skipped = gates.filter((g) => g.skipped).length;
+              const totalActive = gates.filter((g) => !g.skipped).length;
               const phase = PHASE_META[c.phase] ?? {
                 label: c.phase,
                 cls: "text-on-surface-variant border-border-muted",
               };
               const statusCls = STATUS_CLS[c.status] ?? STATUS_CLS.active;
+              const conf = computeDeliveryConfidence({
+                approvedGates: approved,
+                totalGates: totalActive,
+                compositeRiskScore: c.riskScore?.compositeScore ?? 0,
+                scoringConfidence: c.riskScore?.scoringConfidence ?? 0.5,
+                reducedFromBaseline: c.adaptivePipeline?.reducedFromBaseline ?? 0,
+                openCriticalRisks: rejected,
+                waiverCount: 0,
+              });
 
               return (
                 <Link
@@ -162,14 +173,9 @@ export default async function Cases() {
                       <p className="font-mono-technical text-[10px] text-on-surface-variant">
                         #{c.id.slice(-8).toUpperCase()}
                       </p>
-                      {c.riskScore && (
-                        <p className="font-mono-technical text-[11px] text-on-surface">
-                          Risk:{" "}
-                          <span className="text-primary">
-                            {Math.round(c.riskScore.compositeScore)}
-                          </span>
-                        </p>
-                      )}
+                      <span className={`inline-block px-2 py-0.5 font-mono-technical text-[9px] border ${conf.cls}`}>
+                        {conf.score}% {conf.label}
+                      </span>
                       <p className="font-mono-technical text-[10px] text-on-surface-variant">
                         {c._count.evidenceItems} evidence item
                         {c._count.evidenceItems !== 1 ? "s" : ""}
