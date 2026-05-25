@@ -239,6 +239,57 @@ export class GitHubConnector implements SourceConnector {
 
     return { url: pr.html_url, number: pr.number };
   }
+
+  async listRepositories(): Promise<
+    Array<{ id: string; name: string; fullName: string; defaultBranch: string; private: boolean; description: string | null }>
+  > {
+    const repos = await this.ghFetch<
+      Array<{ id: number; name: string; full_name: string; default_branch: string; private: boolean; description: string | null }>
+    >(`/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member`);
+    return repos.map((r) => ({
+      id: String(r.id),
+      name: r.name,
+      fullName: r.full_name,
+      defaultBranch: r.default_branch,
+      private: r.private,
+      description: r.description,
+    }));
+  }
+
+  async listOpenPRs(): Promise<
+    Array<{ number: number; title: string; author: string; url: string; labels: string[]; sourceBranch: string; targetBranch: string }>
+  > {
+    const { owner, repo } = this.opts;
+    const prs = await this.ghFetch<
+      Array<{ number: number; title: string; user: { login: string }; html_url: string; labels: Array<{ name: string }>; head: { ref: string }; base: { ref: string } }>
+    >(`/repos/${owner}/${repo}/pulls?state=open&per_page=50&sort=updated`);
+    return prs.map((pr) => ({
+      number: pr.number,
+      title: pr.title,
+      author: pr.user.login,
+      url: pr.html_url,
+      labels: pr.labels.map((l) => l.name),
+      sourceBranch: pr.head.ref,
+      targetBranch: pr.base.ref,
+    }));
+  }
+
+  async createIssue(input: {
+    title: string;
+    body: string;
+    labels?: string[];
+  }): Promise<{ number: number; url: string }> {
+    const { owner, repo } = this.opts;
+    const issue = await this.ghFetch<{ number: number; html_url: string }>(
+      `/repos/${owner}/${repo}/issues`,
+      {
+        method: "POST",
+        body: JSON.stringify({ title: input.title, body: input.body, labels: input.labels ?? [] }),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    return { number: issue.number, url: issue.html_url };
+  }
 }
 
 export function buildGitHubConnector(token: string, owner: string, repo: string): GitHubConnector {

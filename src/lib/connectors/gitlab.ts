@@ -239,6 +239,53 @@ export class GitLabConnector implements SourceConnector {
 
     return { url: mr.web_url, number: mr.iid };
   }
+
+  async listProjects(): Promise<
+    Array<{ id: string; name: string; pathWithNamespace: string; defaultBranch: string | null; description: string | null }>
+  > {
+    const projects = await this.glFetch<
+      Array<{ id: number; name: string; path_with_namespace: string; default_branch: string | null; description: string | null }>
+    >(`/projects?membership=true&per_page=100&order_by=last_activity_at`);
+    return projects.map((p) => ({
+      id: String(p.id),
+      name: p.name,
+      pathWithNamespace: p.path_with_namespace,
+      defaultBranch: p.default_branch,
+      description: p.description,
+    }));
+  }
+
+  async listOpenMRs(): Promise<
+    Array<{ iid: number; title: string; author: string; url: string; labels: string[]; sourceBranch: string; targetBranch: string }>
+  > {
+    const mrs = await this.glFetch<
+      Array<{ iid: number; title: string; author: { username: string }; web_url: string; labels: string[]; source_branch: string; target_branch: string }>
+    >(`/projects/${this.encodedProjectId()}/merge_requests?state=opened&per_page=50&order_by=updated_at`);
+    return mrs.map((mr) => ({
+      iid: mr.iid,
+      title: mr.title,
+      author: mr.author.username,
+      url: mr.web_url,
+      labels: mr.labels ?? [],
+      sourceBranch: mr.source_branch,
+      targetBranch: mr.target_branch,
+    }));
+  }
+
+  async createIssue(input: {
+    title: string;
+    body: string;
+    labels?: string[];
+  }): Promise<{ iid: number; url: string }> {
+    const issue = await this.glFetch<{ iid: number; web_url: string }>(
+      `/projects/${this.encodedProjectId()}/issues`,
+      {
+        method: "POST",
+        body: JSON.stringify({ title: input.title, description: input.body, labels: (input.labels ?? []).join(",") }),
+      }
+    );
+    return { iid: issue.iid, url: issue.web_url };
+  }
 }
 
 export function buildGitLabConnector(opts: GitLabConnectorOptions): GitLabConnector {

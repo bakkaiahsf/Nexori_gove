@@ -1793,6 +1793,12 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
           ORCHESTRATION
         </a>
         <a
+          href={`/admin/projects/${project.id}`}
+          className="flex-1 text-center py-xs font-mono-technical text-[10px] border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+        >
+          SYNC
+        </a>
+        <a
           href={`/release-readiness?project=${project.key}`}
           className={`flex-1 text-center py-xs font-mono-technical text-[10px] border transition-colors ${project.readiness === "NO_GO" ? "border-critical text-critical hover:bg-critical/10" : project.readiness === "GO" ? "border-primary text-primary hover:bg-primary/10" : "border-border-muted text-on-surface-variant hover:border-primary hover:text-primary"}`}
         >
