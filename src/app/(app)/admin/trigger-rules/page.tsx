@@ -1,33 +1,45 @@
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 import { TriggerAction } from "@prisma/client";
 import TriggerRulesClient from "./TriggerRulesClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function TriggerRulesPage() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true },
+export default async function TriggerRulesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const sp = await searchParams;
+
+  // Load all projects so the client can switch between them
+  const projects = await prisma.project.findMany({
+    select: { id: true, key: true, name: true },
+    orderBy: { name: "asc" },
   });
 
-  if (!project) {
+  if (projects.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="font-mono-technical text-on-surface-variant text-[12px]">No project found.</p>
+        <p className="font-mono-technical text-on-surface-variant text-[12px]">
+          No projects found. Onboard a project first.
+        </p>
       </div>
     );
   }
 
+  // Active project: from query param, or first project
+  const activeProject =
+    projects.find((p) => p.id === sp.project || p.key === sp.project) ?? projects[0];
+
   const [rules, evaluations, connectors] = await Promise.all([
     prisma.governanceTriggerRule.findMany({
-      where: { projectId: project.id },
+      where: { projectId: activeProject.id },
       orderBy: [{ enabled: "desc" }, { priority: "desc" }],
     }),
     prisma.triggerEvaluation.findMany({
-      where: { projectId: project.id },
+      where: { projectId: activeProject.id },
       orderBy: { evaluatedAt: "desc" },
-      take: 20,
+      take: 30,
       select: {
         id: true,
         sourceType: true,
@@ -55,8 +67,8 @@ export default async function TriggerRulesPage() {
           <h1 className="font-headline-md text-headline-md text-on-surface">
             Governance Trigger Rules
           </h1>
-          <span className="font-body-base text-body-base text-on-surface-variant">
-            {project.name} · Configure which tool events activate governance
+          <span className="font-body-base text-body-base text-on-surface-variant text-[12px]">
+            Configure which tool events activate governance — per project
           </span>
         </div>
         <div className="flex items-center gap-md font-mono-technical text-[10px]">
@@ -67,9 +79,12 @@ export default async function TriggerRulesPage() {
           <span className="text-on-surface-variant">{skippedCount} SKIPPED</span>
         </div>
       </header>
+
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <TriggerRulesClient
-          projectId={project.id}
+          activeProjectId={activeProject.id}
+          activeProjectName={activeProject.name}
+          projects={projects}
           rules={rules.map((r) => ({
             ...r,
             conditions: r.conditions as Array<{ field: string; op: string; value: string }>,

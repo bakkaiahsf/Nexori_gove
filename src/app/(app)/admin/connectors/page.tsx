@@ -1,5 +1,4 @@
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -34,23 +33,18 @@ const CONNECTOR_META: Record<
 };
 
 export default async function ConnectorsPage() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true },
-  });
-
-  const connectors = await prisma.sourceConnector.findMany({
-    orderBy: { createdAt: "asc" },
-    include: {
-      _count: { select: { epics: true } },
-    },
-  });
-
-  const recentEvaluations = await prisma.triggerEvaluation.groupBy({
-    by: ["connectorId", "matched"],
-    where: { connectorId: { not: null } },
-    _count: { id: true },
-  });
+  const [projectCount, connectors, recentEvaluations] = await Promise.all([
+    prisma.project.count(),
+    prisma.sourceConnector.findMany({
+      orderBy: { createdAt: "asc" },
+      include: { _count: { select: { epics: true } } },
+    }),
+    prisma.triggerEvaluation.groupBy({
+      by: ["connectorId", "matched"],
+      where: { connectorId: { not: null } },
+      _count: { id: true },
+    }),
+  ]);
 
   return (
     <>

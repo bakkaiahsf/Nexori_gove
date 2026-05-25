@@ -116,10 +116,14 @@ interface Connector {
 }
 
 interface Props {
-  projectId: string;
+  activeProjectId: string;
+  activeProjectName: string;
+  projects: { id: string; key: string; name: string }[];
   rules: Rule[];
   evaluations: Evaluation[];
   connectors: Connector[];
+  // backwards compat
+  projectId?: string;
 }
 
 const DEFAULT_FORM = {
@@ -133,11 +137,15 @@ const DEFAULT_FORM = {
 };
 
 export default function TriggerRulesClient({
-  projectId,
+  activeProjectId,
+  activeProjectName,
+  projects,
   rules: initialRules,
   evaluations,
   connectors,
+  projectId: _legacyProjectId,
 }: Props) {
+  const projectId = activeProjectId ?? _legacyProjectId ?? "";
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...DEFAULT_FORM });
@@ -215,6 +223,30 @@ export default function TriggerRulesClient({
   return (
     <div className="p-xl">
       <div className="max-w-[1200px] mx-auto space-y-lg">
+        {/* Project selector */}
+        {projects && projects.length > 1 && (
+          <div className="flex items-center gap-md">
+            <span className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest shrink-0">
+              PROJECT
+            </span>
+            <div className="flex items-center gap-xs flex-wrap">
+              {projects.map((p) => (
+                <a
+                  key={p.id}
+                  href={`/admin/trigger-rules?project=${p.id}`}
+                  className={`px-md py-xs font-mono-technical text-[10px] border transition-colors ${
+                    p.id === projectId
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border-muted text-on-surface-variant hover:border-primary/50"
+                  }`}
+                >
+                  {p.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Explainer */}
         <div className="bg-surface border border-border-muted p-lg grid grid-cols-3 gap-lg text-center">
           {[

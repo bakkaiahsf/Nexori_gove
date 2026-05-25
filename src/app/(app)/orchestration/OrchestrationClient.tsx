@@ -4,9 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import ApproveButton from "@/components/governance/ApproveButton";
 import RejectButton from "@/components/governance/RejectButton";
-import type { ConnectorGroup, OrchestrationCase, OrchestrationGate, ProgramStats } from "./types";
+import type {
+  SourceGroup,
+  OrchestrationCase,
+  OrchestrationGate,
+  EnterpriseStats,
+  ConnectorHealth,
+} from "./types";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── shared primitives ────────────────────────────────────────────────────────
+
+function Icon({ name, size = 14 }: { name: string; size?: number }) {
+  return (
+    <span className="material-symbols-outlined select-none leading-none" style={{ fontSize: size }}>
+      {name}
+    </span>
+  );
+}
 
 function IntensityBadge({ intensity }: { intensity: string | undefined }) {
   const map: Record<string, string> = {
@@ -14,6 +28,7 @@ function IntensityBadge({ intensity }: { intensity: string | undefined }) {
     regulated: "text-primary border-primary bg-primary/10",
     critical: "text-critical border-critical bg-critical/10",
     standard: "text-on-surface-variant border-border-muted",
+    minimal: "text-on-surface-variant border-border-muted",
   };
   if (!intensity) return null;
   return (
@@ -25,15 +40,55 @@ function IntensityBadge({ intensity }: { intensity: string | undefined }) {
   );
 }
 
-function PhaseBadge({ phase }: { phase: string }) {
+function StatChip({
+  label,
+  value,
+  color = "text-on-surface",
+}: {
+  label: string;
+  value: number | string;
+  color?: string;
+}) {
   return (
-    <span className="px-2 py-0.5 font-mono-technical text-[9px] border border-border-muted text-on-surface-variant bg-surface-container-high">
-      {phase}
-    </span>
+    <div className="text-center">
+      <p className={`font-mono-technical text-[16px] font-bold ${color} leading-none`}>{value}</p>
+      <p className="font-mono-technical text-[8px] text-on-surface-variant tracking-widest mt-0.5">
+        {label}
+      </p>
+    </div>
   );
 }
 
-// ─── orchestration breadcrumb ────────────────────────────────────────────────
+// ─── source type config ───────────────────────────────────────────────────────
+
+const SOURCE_META: Record<string, { label: string; icon: string; color: string; abbr: string }> = {
+  jira: {
+    label: "Jira",
+    icon: "J",
+    color: "text-primary border-primary bg-primary/10",
+    abbr: "JIRA",
+  },
+  github: {
+    label: "GitHub",
+    icon: "G",
+    color: "text-tertiary border-tertiary bg-tertiary/10",
+    abbr: "GH",
+  },
+  gitlab: {
+    label: "GitLab",
+    icon: "GL",
+    color: "text-critical border-critical/40 bg-critical/5",
+    abbr: "GL",
+  },
+  manual: {
+    label: "Manual",
+    icon: "M",
+    color: "text-on-surface-variant border-border-muted",
+    abbr: "MAN",
+  },
+};
+
+// ─── orchestration pipeline breadcrumb ───────────────────────────────────────
 
 type StepState = "done" | "active" | "pending";
 
@@ -42,32 +97,42 @@ function OrchBreadcrumb({
   context,
   riskScore,
   gates,
+  sourceType,
 }: {
   triggerEval: OrchestrationCase["triggerEval"];
   context: OrchestrationCase["context"];
   riskScore: OrchestrationCase["riskScore"];
   gates: OrchestrationGate[];
+  sourceType: string;
 }) {
-  const step1: StepState = triggerEval ? "done" : "done"; // always present on created case
+  const step1: StepState = "done";
   const step2: StepState = context ? "done" : triggerEval ? "active" : "pending";
   const step3: StepState = riskScore ? "done" : context ? "active" : "pending";
   const step4: StepState = gates.length > 0 ? "done" : riskScore ? "active" : "pending";
 
   const steps = [
-    { label: "EVENT RECEIVED", sub: triggerEval?.sourceType ?? "TRIGGER", state: step1 },
+    {
+      label: "EVENT",
+      sub: (SOURCE_META[sourceType]?.abbr ?? sourceType).toUpperCase(),
+      state: step1,
+    },
     { label: "INTELLIGENCE", sub: context ? "ENRICHED" : "—", state: step2 },
     {
-      label: "RISK SCORED",
+      label: "RISK",
       sub: riskScore ? `${Math.round(riskScore.compositeScore * 100)}` : "—",
       state: step3,
     },
-    { label: "GATE PIPELINE", sub: gates.length > 0 ? `${gates.length} GATES` : "—", state: step4 },
+    {
+      label: "PIPELINE",
+      sub: gates.length > 0 ? `${gates.length} GATES` : "—",
+      state: step4,
+    },
   ];
 
   const stateClass: Record<StepState, string> = {
     done: "text-primary border-primary",
     active: "text-tertiary border-tertiary animate-pulse",
-    pending: "text-on-surface-variant/40 border-border-muted",
+    pending: "text-on-surface-variant/30 border-border-muted",
   };
   const dotClass: Record<StepState, string> = {
     done: "bg-primary",
@@ -79,20 +144,20 @@ function OrchBreadcrumb({
     <div className="flex items-center gap-0">
       {steps.map((step, i) => (
         <div key={step.label} className="flex items-center">
-          <div className={`flex items-center gap-xs border px-md py-xs ${stateClass[step.state]}`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${dotClass[step.state]}`} />
+          <div className={`flex items-center gap-xs border px-sm py-xs ${stateClass[step.state]}`}>
+            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass[step.state]}`} />
             <div>
-              <p className="font-mono-technical text-[9px] tracking-widest leading-none">
+              <p className="font-mono-technical text-[8px] tracking-widest leading-none">
                 {step.label}
               </p>
-              <p className="font-mono-technical text-[8px] opacity-70 leading-none mt-0.5">
+              <p className="font-mono-technical text-[7px] opacity-60 leading-none mt-0.5">
                 {step.sub}
               </p>
             </div>
           </div>
           {i < steps.length - 1 && (
             <div
-              className={`h-px w-4 ${step.state === "done" ? "bg-primary/40" : "bg-border-muted"}`}
+              className={`h-px w-3 shrink-0 ${step.state === "done" ? "bg-primary/30" : "bg-border-muted"}`}
             />
           )}
         </div>
@@ -101,7 +166,7 @@ function OrchBreadcrumb({
   );
 }
 
-// ─── gate pipeline ────────────────────────────────────────────────────────────
+// ─── gate pill ────────────────────────────────────────────────────────────────
 
 function GatePill({
   gate,
@@ -117,56 +182,32 @@ function GatePill({
   const isApproved = gate.status === "APPROVED" && !isSkipped;
   const isPendingApproval = !!gate.pendingApprovalId && !isSkipped;
   const isInherited = !!gate.inheritedFrom;
-  const isPending = gate.status === "PENDING" && !gate.pendingApprovalId && !isSkipped;
 
-  let pillClass = "border border-border-muted text-on-surface-variant bg-surface-container-high";
+  let pillClass = "border-border-muted text-on-surface-variant bg-surface-container-high";
   if (isSkipped)
-    pillClass = "border border-border-muted text-on-surface-variant/30 bg-surface line-through";
-  else if (isRejected) pillClass = "border border-critical text-critical bg-critical/10";
-  else if (isApproved) pillClass = "border border-primary text-primary bg-primary/10";
+    pillClass = "border-border-muted text-on-surface-variant/30 bg-surface line-through";
+  else if (isRejected) pillClass = "border-critical text-critical bg-critical/10";
+  else if (isApproved) pillClass = "border-primary text-primary bg-primary/10";
   else if (isPendingApproval)
-    pillClass = "border border-tertiary text-tertiary bg-tertiary/10 animate-pulse";
-  else if (isInherited) pillClass = "border border-primary/40 text-primary/60 bg-primary/5";
+    pillClass = "border-tertiary text-tertiary bg-tertiary/10 animate-pulse";
+  else if (isInherited) pillClass = "border-primary/40 text-primary/60 bg-primary/5";
 
   return (
     <div className="relative">
       <button
         onClick={onToggle}
         disabled={!isPendingApproval}
-        className={`flex items-center gap-xs px-md py-xs font-mono-technical text-[10px] whitespace-nowrap transition-all ${pillClass} ${isPendingApproval ? "cursor-pointer hover:brightness-110" : "cursor-default"}`}
+        className={`flex items-center gap-xs px-sm py-xs font-mono-technical text-[9px] whitespace-nowrap border transition-all ${pillClass} ${isPendingApproval ? "cursor-pointer hover:brightness-110" : "cursor-default"}`}
       >
-        {isSkipped && (
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-            skip_next
-          </span>
+        {isSkipped && <Icon name="skip_next" size={9} />}
+        {isApproved && <Icon name="check_circle" size={9} />}
+        {isRejected && <Icon name="cancel" size={9} />}
+        {isPendingApproval && <Icon name="pending" size={9} />}
+        {!isSkipped && !isApproved && !isRejected && !isPendingApproval && (
+          <Icon name="radio_button_unchecked" size={9} />
         )}
-        {isApproved && (
-          <span className="material-symbols-outlined text-primary" style={{ fontSize: 10 }}>
-            check_circle
-          </span>
-        )}
-        {isRejected && (
-          <span className="material-symbols-outlined text-critical" style={{ fontSize: 10 }}>
-            cancel
-          </span>
-        )}
-        {isPendingApproval && (
-          <span className="material-symbols-outlined text-tertiary" style={{ fontSize: 10 }}>
-            pending
-          </span>
-        )}
-        {isPending && (
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-            radio_button_unchecked
-          </span>
-        )}
-        {isInherited && !isApproved && (
-          <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-            content_copy
-          </span>
-        )}
+        {isInherited && !isApproved && <Icon name="content_copy" size={9} />}
         <span>{gate.name}</span>
-        {isInherited && <span className="font-mono-technical text-[8px] opacity-60">↑</span>}
       </button>
 
       {expanded && gate.pendingApprovalId && (
@@ -175,9 +216,6 @@ function GatePill({
             GATE ACTION
           </p>
           <p className="font-body-bold text-body-bold text-on-surface text-[11px]">{gate.name}</p>
-          {gate.approvedBy && (
-            <p className="font-mono-technical text-[9px] text-primary">By {gate.approvedBy}</p>
-          )}
           <div className="flex gap-xs pt-xs">
             <ApproveButton approvalId={gate.pendingApprovalId} />
             <RejectButton approvalId={gate.pendingApprovalId} />
@@ -190,89 +228,90 @@ function GatePill({
 
 // ─── case card ────────────────────────────────────────────────────────────────
 
-function CaseCard({ c }: { c: OrchestrationCase }) {
+function CaseCard({ c, showProject }: { c: OrchestrationCase; showProject?: boolean }) {
   const [expandedGateId, setExpandedGateId] = useState<string | null>(null);
 
   const blockedGates = c.gates.filter((g) => g.status === "REJECTED" && !g.skipped);
   const pendingGates = c.gates.filter((g) => g.pendingApprovalId && !g.skipped);
   const approvedGates = c.gates.filter((g) => g.status === "APPROVED" && !g.skipped);
+  const activePipelineGates = c.gates.filter((g) => !g.skipped);
 
   return (
-    <div className="bg-surface border border-border-muted hover:border-primary/30 transition-colors">
+    <div className="bg-surface border-b border-border-muted last:border-0 hover:bg-surface-container-low/30 transition-colors">
       {/* header */}
-      <div className="px-xl py-lg border-b border-border-muted">
-        <div className="flex items-start gap-lg">
+      <div className="px-lg py-md">
+        <div className="flex items-start gap-md">
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-sm mb-xs">
-              <PhaseBadge phase={c.phase} />
+            <div className="flex flex-wrap items-center gap-xs mb-xs">
+              {showProject && (
+                <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant bg-surface-container-high">
+                  {c.project.key}
+                </span>
+              )}
+              <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-border-muted text-on-surface-variant">
+                {c.phase}
+              </span>
               <IntensityBadge intensity={c.riskScore?.intensity} />
               {blockedGates.length > 0 && (
-                <span className="px-2 py-0.5 font-mono-technical text-[9px] border border-critical text-critical bg-critical/10">
+                <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-critical text-critical bg-critical/10">
                   {blockedGates.length} BLOCKED
                 </span>
               )}
               {pendingGates.length > 0 && (
-                <span className="px-2 py-0.5 font-mono-technical text-[9px] border border-tertiary text-tertiary animate-pulse">
+                <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-tertiary text-tertiary animate-pulse">
                   {pendingGates.length} AWAITING
                 </span>
               )}
             </div>
             <Link
               href={`/cases/${c.id}`}
-              className="font-body-bold text-body-bold text-on-surface text-[14px] hover:text-primary transition-colors leading-snug"
+              className="font-body-bold text-body-bold text-on-surface text-[13px] hover:text-primary transition-colors leading-snug"
             >
               {c.title}
             </Link>
-            <div className="flex items-center gap-md mt-xs">
-              {c.sourceEpicKey && (
-                <span className="font-mono-technical text-[10px] text-on-surface-variant">
-                  {c.sourceEpicKey}
-                </span>
-              )}
-              {c.sourceGovEpicKey && (
-                <span className="font-mono-technical text-[10px] text-primary">
-                  <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-                    sync
-                  </span>{" "}
-                  {c.sourceGovEpicKey}
-                </span>
-              )}
-              {c.triggerEval && (
-                <span className="font-mono-technical text-[10px] text-on-surface-variant">
-                  {c.triggerEval.sourceType} · {c.triggerEval.eventType}
-                </span>
-              )}
-            </div>
+            {(c.sourceEpicKey || c.sourceGovEpicKey) && (
+              <div className="flex items-center gap-sm mt-xs">
+                {c.sourceEpicKey && (
+                  <span className="font-mono-technical text-[9px] text-on-surface-variant">
+                    {c.sourceEpicKey}
+                  </span>
+                )}
+                {c.sourceGovEpicKey && (
+                  <span className="font-mono-technical text-[9px] text-primary flex items-center gap-xs">
+                    <Icon name="sync" size={9} />
+                    {c.sourceGovEpicKey}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {c.riskScore && (
-            <div className="text-right shrink-0">
-              <p className="font-mono-technical text-[20px] font-bold text-on-surface leading-none">
-                {Math.round(c.riskScore.compositeScore * 100)}
-              </p>
-              <p className="font-mono-technical text-[9px] text-on-surface-variant">RISK SCORE</p>
-              <p className="font-mono-technical text-[9px] text-primary mt-xs">
-                {c.riskScore.aiModeRecommended}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+          <div className="flex items-center gap-lg shrink-0">
+            {/* orchestration pipeline state */}
+            <OrchBreadcrumb
+              triggerEval={c.triggerEval}
+              context={c.context}
+              riskScore={c.riskScore}
+              gates={c.gates}
+              sourceType={c.sourceType}
+            />
 
-      {/* orchestration breadcrumb */}
-      <div className="px-xl py-md border-b border-border-muted bg-surface-container-low">
-        <OrchBreadcrumb
-          triggerEval={c.triggerEval}
-          context={c.context}
-          riskScore={c.riskScore}
-          gates={c.gates}
-        />
+            {c.riskScore && (
+              <div className="text-right w-12">
+                <p className="font-mono-technical text-[18px] font-bold text-on-surface leading-none">
+                  {Math.round(c.riskScore.compositeScore * 100)}
+                </p>
+                <p className="font-mono-technical text-[8px] text-on-surface-variant">RISK</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* gate pipeline */}
       {c.gates.length > 0 && (
-        <div className="px-xl py-md border-b border-border-muted overflow-x-auto">
-          <div className="flex items-center gap-xs pb-xs">
+        <div className="px-lg pb-md">
+          <div className="flex items-center gap-xs flex-wrap mb-xs">
             {c.gates.map((gate) => (
               <GatePill
                 key={gate.id}
@@ -282,219 +321,251 @@ function CaseCard({ c }: { c: OrchestrationCase }) {
               />
             ))}
           </div>
-          <div className="flex items-center gap-lg mt-xs">
-            <span className="font-mono-technical text-[9px] text-on-surface-variant">
-              {approvedGates.length}/{c.gates.filter((g) => !g.skipped).length} APPROVED
+          <div className="flex items-center gap-md">
+            <span className="font-mono-technical text-[8px] text-on-surface-variant">
+              {approvedGates.length}/{activePipelineGates.length} APPROVED
             </span>
             {c.adaptivePipeline && c.adaptivePipeline.reducedFromBaseline > 0 && (
-              <span className="font-mono-technical text-[9px] text-primary">
+              <span className="font-mono-technical text-[8px] text-primary">
                 ↓ {c.adaptivePipeline.reducedFromBaseline} SKIPPED BY POLICY
               </span>
             )}
+            {c.evidenceCount > 0 && (
+              <span className="font-mono-technical text-[8px] text-on-surface-variant flex items-center gap-xs">
+                <Icon name="inventory_2" size={8} />
+                {c.evidenceCount} EVIDENCE
+              </span>
+            )}
+            {c.waiverCount > 0 && (
+              <span className="font-mono-technical text-[8px] text-tertiary flex items-center gap-xs">
+                <Icon name="gavel" size={8} />
+                {c.waiverCount} WAIVER{c.waiverCount !== 1 ? "S" : ""}
+              </span>
+            )}
+            {c.context?.aiSystemInvolved && (
+              <span className="font-mono-technical text-[8px] text-primary flex items-center gap-xs">
+                <Icon name="psychology" size={8} />
+                AI
+              </span>
+            )}
+            <div className="flex-1" />
+            <Link
+              href={`/cases/${c.id}`}
+              className="font-mono-technical text-[8px] text-primary hover:underline"
+            >
+              DETAIL →
+            </Link>
           </div>
         </div>
       )}
-
-      {/* footer */}
-      <div className="px-xl py-sm flex items-center gap-xl">
-        <div className="flex items-center gap-md flex-1">
-          <span className="font-mono-technical text-[9px] text-on-surface-variant flex items-center gap-xs">
-            <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-              inventory_2
-            </span>
-            {c.evidenceCount} EVIDENCE
-          </span>
-          {c.waiverCount > 0 && (
-            <span className="font-mono-technical text-[9px] text-tertiary flex items-center gap-xs">
-              <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-                gavel
-              </span>
-              {c.waiverCount} WAIVER{c.waiverCount !== 1 ? "S" : ""}
-            </span>
-          )}
-          {c.context?.aiSystemInvolved && (
-            <span className="font-mono-technical text-[9px] text-primary flex items-center gap-xs">
-              <span className="material-symbols-outlined" style={{ fontSize: 10 }}>
-                psychology
-              </span>
-              AI SYSTEM
-            </span>
-          )}
-          {c.context?.environment && (
-            <span className="font-mono-technical text-[9px] text-on-surface-variant">
-              ENV: {c.context.environment}
-            </span>
-          )}
-        </div>
-        <Link
-          href={`/cases/${c.id}`}
-          className="font-mono-technical text-[9px] text-primary hover:underline flex items-center gap-xs"
-        >
-          FULL DETAIL →
-        </Link>
-      </div>
     </div>
   );
 }
 
-// ─── connector header (program mode row) ────────────────────────────────────
+// ─── source group panel ───────────────────────────────────────────────────────
 
-function ConnectorHeader({
+type FilterStatus = "all" | "blocked" | "pending" | "enhanced" | "regulated";
+
+function filterCase(c: OrchestrationCase, filter: FilterStatus): boolean {
+  if (filter === "all") return true;
+  if (filter === "blocked") return c.gates.some((g) => g.status === "REJECTED" && !g.skipped);
+  if (filter === "pending") return c.gates.some((g) => g.pendingApprovalId && !g.skipped);
+  if (filter === "enhanced") return c.riskScore?.intensity === "enhanced";
+  if (filter === "regulated") return c.riskScore?.intensity === "regulated";
+  return true;
+}
+
+function SourceGroupPanel({
   group,
-  expanded,
-  onToggle,
+  health,
+  filter,
+  defaultExpanded,
 }: {
-  group: ConnectorGroup;
-  expanded: boolean;
-  onToggle: () => void;
+  group: SourceGroup;
+  health: ConnectorHealth | undefined;
+  filter: FilterStatus;
+  defaultExpanded: boolean;
 }) {
-  const { connector, stats } = group;
-  const typeColor: Record<string, string> = {
-    jira: "text-primary border-primary bg-primary/10",
-    github: "text-tertiary border-tertiary bg-tertiary/10",
-    gitlab: "text-primary border-primary bg-primary/10",
-  };
-  const color = connector
-    ? (typeColor[connector.type] ?? "text-on-surface border-border-muted")
-    : "text-on-surface-variant border-border-muted";
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const meta = SOURCE_META[group.sourceType] ?? SOURCE_META.manual;
+  const visible = group.cases.filter((c) => filterCase(c, filter));
+
+  // Group cases by project within the source group
+  const byProject = new Map<string, OrchestrationCase[]>();
+  for (const c of visible) {
+    const arr = byProject.get(c.project.name) ?? [];
+    arr.push(c);
+    byProject.set(c.project.name, arr);
+  }
 
   return (
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center gap-lg px-xl py-lg bg-surface border border-border-muted hover:bg-surface-container-low transition-colors text-left"
-    >
-      {connector ? (
+    <div className="border border-border-muted">
+      {/* source header */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-lg px-lg py-md bg-surface-container-low hover:bg-surface-container-high transition-colors text-left"
+      >
         <div
-          className={`w-9 h-9 border flex items-center justify-center font-mono-technical text-[10px] shrink-0 ${color}`}
+          className={`w-9 h-9 border flex items-center justify-center font-mono-technical text-[11px] font-bold shrink-0 ${meta.color}`}
         >
-          {connector.type === "jira"
-            ? "J"
-            : connector.type === "github"
-              ? "G"
-              : connector.type === "gitlab"
-                ? "GL"
-                : "?"}
+          {meta.icon}
         </div>
-      ) : (
-        <div className="w-9 h-9 border border-border-muted flex items-center justify-center shrink-0">
-          <span
-            className="material-symbols-outlined text-on-surface-variant"
-            style={{ fontSize: 14 }}
-          >
-            link_off
-          </span>
-        </div>
-      )}
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-sm">
-          <span className="font-body-bold text-body-bold text-on-surface text-[13px]">
-            {connector?.name ?? "Unlinked Cases"}
-          </span>
-          {connector && (
-            <span className={`px-2 py-0.5 font-mono-technical text-[9px] border ${color}`}>
-              {connector.type.toUpperCase()}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-sm">
+            <span className="font-body-bold text-body-bold text-on-surface text-[13px]">
+              {group.connector?.name ?? meta.label}
             </span>
+            <span className={`px-1.5 py-0.5 font-mono-technical text-[8px] border ${meta.color}`}>
+              {meta.abbr}
+            </span>
+            {group.connector && (
+              <span
+                className={`px-1.5 py-0.5 font-mono-technical text-[8px] border ${group.connector.enabled ? "border-primary/30 text-primary/70" : "border-critical/30 text-critical/70"}`}
+              >
+                {group.connector.enabled ? "CONNECTED" : "DISABLED"}
+              </span>
+            )}
+          </div>
+          {group.connector?.baseUrl && (
+            <p className="font-mono-technical text-[9px] text-on-surface-variant truncate">
+              {group.connector.baseUrl}
+            </p>
           )}
         </div>
-        {connector?.baseUrl && (
-          <p className="font-mono-technical text-[10px] text-on-surface-variant truncate">
-            {connector.baseUrl}
-          </p>
-        )}
-      </div>
 
-      <div className="flex items-center gap-xl shrink-0">
-        <StatChip label="CASES" value={stats.total} />
-        {stats.enhanced > 0 && (
-          <StatChip label="ENHANCED" value={stats.enhanced} color="text-tertiary" />
-        )}
-        {stats.regulated > 0 && (
-          <StatChip label="REGULATED" value={stats.regulated} color="text-primary" />
-        )}
-        {stats.blocked > 0 && (
-          <StatChip label="BLOCKED" value={stats.blocked} color="text-critical" />
-        )}
-        {stats.pending > 0 && (
-          <StatChip label="PENDING" value={stats.pending} color="text-tertiary" />
-        )}
-        {stats.waivers > 0 && <StatChip label="WAIVERS" value={stats.waivers} />}
-      </div>
+        <div className="flex items-center gap-xl shrink-0">
+          <StatChip label="CASES" value={group.stats.total} />
+          {group.stats.enhanced > 0 && (
+            <StatChip label="ENHANCED" value={group.stats.enhanced} color="text-tertiary" />
+          )}
+          {group.stats.regulated > 0 && (
+            <StatChip label="REGULATED" value={group.stats.regulated} color="text-primary" />
+          )}
+          {group.stats.blocked > 0 && (
+            <StatChip label="BLOCKED" value={group.stats.blocked} color="text-critical" />
+          )}
+          {group.stats.pending > 0 && (
+            <StatChip label="PENDING" value={group.stats.pending} color="text-tertiary" />
+          )}
+          {health && (
+            <div className="text-center">
+              <p className="font-mono-technical text-[13px] font-bold text-on-surface-variant leading-none">
+                {health.eventCount}
+              </p>
+              <p className="font-mono-technical text-[8px] text-on-surface-variant tracking-widest">
+                EVENTS
+              </p>
+            </div>
+          )}
+        </div>
 
-      <span
-        className="material-symbols-outlined text-on-surface-variant ml-md"
-        style={{ fontSize: 16 }}
-      >
-        {expanded ? "expand_less" : "expand_more"}
-      </span>
-    </button>
-  );
-}
+        <Icon name={expanded ? "expand_less" : "expand_more"} size={16} />
+      </button>
 
-function StatChip({
-  label,
-  value,
-  color = "text-on-surface-variant",
-}: {
-  label: string;
-  value: number;
-  color?: string;
-}) {
-  return (
-    <div className="text-center">
-      <p className={`font-mono-technical text-[13px] font-bold ${color} leading-none`}>{value}</p>
-      <p className="font-mono-technical text-[8px] text-on-surface-variant tracking-widest">
-        {label}
-      </p>
+      {/* cases */}
+      {expanded && (
+        <div className="divide-y divide-border-muted border-t border-border-muted">
+          {visible.length === 0 ? (
+            <div className="px-lg py-md text-center">
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                No cases match the current filter.
+              </p>
+            </div>
+          ) : byProject.size > 1 ? (
+            // Multiple projects — show project subheaders
+            Array.from(byProject.entries()).map(([projectName, cases]) => (
+              <div key={projectName}>
+                <div className="px-lg py-xs bg-surface-container-low flex items-center gap-sm border-b border-border-muted">
+                  <Icon name="folder_special" size={11} />
+                  <span className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+                    {projectName}
+                  </span>
+                  <span className="font-mono-technical text-[8px] text-on-surface-variant/60">
+                    {cases.length} case{cases.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                {cases.map((c) => (
+                  <CaseCard key={c.id} c={c} showProject={false} />
+                ))}
+              </div>
+            ))
+          ) : (
+            // Single project — no subheader needed
+            visible.map((c) => <CaseCard key={c.id} c={c} showProject={false} />)
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── program stats bar ────────────────────────────────────────────────────────
+// ─── enterprise stats bar ─────────────────────────────────────────────────────
 
-function ProgramStatsBar({ stats }: { stats: ProgramStats }) {
+function EnterpriseStatsBar({
+  stats,
+  projectCount,
+}: {
+  stats: EnterpriseStats;
+  projectCount: number;
+}) {
+  const dominantMode = Object.entries(stats.aiModes).sort(([, a], [, b]) => b - a)[0]?.[0];
+
   return (
-    <div className="bg-surface border border-border-muted px-xl py-lg flex items-center gap-xxl">
-      <div>
-        <p className="font-mono-technical text-[22px] font-bold text-on-surface leading-none">
-          {stats.totalCases}
-        </p>
-        <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
-          TOTAL CASES
-        </p>
-      </div>
-      <div className="h-8 w-px bg-border-muted" />
-      <div className="flex items-center gap-xl flex-1">
-        {[
-          { label: "ENHANCED", value: stats.enhanced, color: "text-tertiary" },
-          { label: "REGULATED", value: stats.regulated, color: "text-primary" },
-          { label: "BLOCKED", value: stats.blocked, color: "text-critical" },
-          { label: "PENDING", value: stats.pending, color: "text-tertiary" },
-          { label: "WAIVERS", value: stats.waivers, color: "text-on-surface-variant" },
-        ].map((s) => (
-          <div key={s.label} className="text-center">
-            <p className={`font-mono-technical text-[18px] font-bold ${s.color} leading-none`}>
-              {s.value}
-            </p>
+    <div className="bg-surface border border-border-muted px-xl py-lg">
+      <div className="flex items-center gap-xxl">
+        <div>
+          <p className="font-mono-technical text-[28px] font-bold text-on-surface leading-none">
+            {stats.totalCases}
+          </p>
+          <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
+            GOVERNANCE CASES
+          </p>
+          <p className="font-mono-technical text-[9px] text-on-surface-variant mt-xs">
+            across {projectCount} project{projectCount !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        <div className="h-12 w-px bg-border-muted shrink-0" />
+
+        <div className="flex items-center gap-xl flex-1 flex-wrap">
+          {[
+            { label: "ENHANCED RISK", value: stats.enhanced, color: "text-tertiary" },
+            { label: "REGULATED", value: stats.regulated, color: "text-primary" },
+            { label: "BLOCKED", value: stats.blocked, color: "text-critical" },
+            { label: "PENDING APPROVAL", value: stats.pending, color: "text-tertiary" },
+            { label: "WAIVERS", value: stats.waivers, color: "text-on-surface-variant" },
+            {
+              label: "AVG RISK SCORE",
+              value: `${Math.round(stats.avgRiskScore * 100)}`,
+              color: "text-on-surface",
+            },
+          ].map((s) => (
+            <StatChip key={s.label} label={s.label} value={s.value} color={s.color} />
+          ))}
+        </div>
+
+        {dominantMode && (
+          <div className="text-right shrink-0">
             <p className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest">
-              {s.label}
+              AI CONTROL
             </p>
+            <p className="font-mono-technical text-[11px] text-primary font-bold">
+              {dominantMode.replace(/_/g, " ")}
+            </p>
+            {Object.keys(stats.aiModes).length > 1 && (
+              <p className="font-mono-technical text-[8px] text-on-surface-variant">
+                {Object.keys(stats.aiModes).length} modes active
+              </p>
+            )}
           </div>
-        ))}
-      </div>
-      <div className="text-right">
-        <p className="font-mono-technical text-[10px] text-on-surface-variant">AI MODE</p>
-        <p className="font-mono-technical text-[12px] text-primary font-bold">
-          {stats.aiMode.replace(/_/g, " ")}
-        </p>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── filter bar ──────────────────────────────────────────────────────────────
-
-type FilterStatus = "all" | "blocked" | "pending" | "enhanced" | "regulated";
 
 function FilterBar({
   active,
@@ -503,238 +574,239 @@ function FilterBar({
 }: {
   active: FilterStatus;
   onChange: (f: FilterStatus) => void;
-  counts: { blocked: number; pending: number; enhanced: number; regulated: number };
+  counts: Record<string, number>;
 }) {
-  const filters: { key: FilterStatus; label: string; count?: number; color?: string }[] = [
+  const filters: { key: FilterStatus; label: string }[] = [
     { key: "all", label: "ALL" },
-    { key: "blocked", label: "BLOCKED", count: counts.blocked, color: "text-critical" },
-    { key: "pending", label: "AWAITING", count: counts.pending, color: "text-tertiary" },
-    { key: "enhanced", label: "ENHANCED", count: counts.enhanced, color: "text-tertiary" },
-    { key: "regulated", label: "REGULATED", count: counts.regulated, color: "text-primary" },
+    { key: "blocked", label: `BLOCKED ${counts.blocked > 0 ? `(${counts.blocked})` : ""}` },
+    { key: "pending", label: `AWAITING ${counts.pending > 0 ? `(${counts.pending})` : ""}` },
+    { key: "enhanced", label: "ENHANCED" },
+    { key: "regulated", label: "REGULATED" },
   ];
 
   return (
-    <div className="flex items-center gap-xs">
+    <div className="flex items-center gap-xs flex-wrap">
       {filters.map((f) => (
         <button
           key={f.key}
           onClick={() => onChange(f.key)}
-          className={`flex items-center gap-xs px-md py-xs font-mono-technical text-[10px] border transition-colors ${
+          className={`px-md py-xs font-mono-technical text-[10px] border transition-colors ${
             active === f.key
               ? "border-primary bg-primary/10 text-primary"
               : "border-border-muted text-on-surface-variant hover:border-on-surface-variant"
           }`}
         >
           {f.label}
-          {f.count !== undefined && f.count > 0 && (
-            <span className={`font-bold ${f.color ?? ""}`}>{f.count}</span>
-          )}
         </button>
       ))}
     </div>
   );
 }
 
-// ─── main client ─────────────────────────────────────────────────────────────
+// ─── connector health strip ───────────────────────────────────────────────────
 
-type ViewMode = "project" | "program";
+function ConnectorHealthStrip({ connectors }: { connectors: ConnectorHealth[] }) {
+  if (connectors.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-md px-xl py-sm bg-surface-container-low border-b border-border-muted overflow-x-auto">
+      <span className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest shrink-0">
+        CONNECTORS
+      </span>
+      {connectors.map((c) => {
+        const meta = SOURCE_META[c.type] ?? SOURCE_META.manual;
+        return (
+          <div key={c.id} className="flex items-center gap-xs shrink-0">
+            <div
+              className={`w-5 h-5 border flex items-center justify-center font-mono-technical text-[8px] font-bold ${meta.color}`}
+            >
+              {meta.icon}
+            </div>
+            <div>
+              <p className="font-mono-technical text-[9px] text-on-surface leading-none">
+                {c.name}
+              </p>
+              <p className="font-mono-technical text-[8px] text-on-surface-variant leading-none">
+                {c.enabled ? (
+                  <span className="text-primary">
+                    {c.matchedCount}/{c.eventCount} matched
+                  </span>
+                ) : (
+                  <span className="text-critical">disabled</span>
+                )}
+              </p>
+            </div>
+            <div className="w-px h-6 bg-border-muted ml-xs" />
+          </div>
+        );
+      })}
+      <Link
+        href="/admin/connectors"
+        className="font-mono-technical text-[9px] text-primary hover:underline shrink-0 ml-auto"
+      >
+        MANAGE →
+      </Link>
+    </div>
+  );
+}
+
+// ─── empty state ──────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  return (
+    <div className="px-xl py-xxl">
+      <div className="max-w-[560px] mx-auto bg-surface border border-border-muted p-xl text-center space-y-lg">
+        <Icon name="account_tree" size={36} />
+        <div>
+          <p className="font-body-bold text-body-bold text-on-surface text-[15px]">
+            No governance cases yet
+          </p>
+          <p className="font-mono-technical text-[11px] text-on-surface-variant mt-sm leading-relaxed">
+            Cases are created automatically when a source tool event — Jira Portfolio Epic, GitHub
+            PR, GitLab MR — matches a configured trigger rule. You can also create cases manually
+            from the Projects page.
+          </p>
+        </div>
+        <div className="flex items-center gap-sm justify-center flex-wrap">
+          <Link
+            href="/admin/trigger-rules"
+            className="px-lg py-sm font-mono-technical text-[10px] bg-primary text-background"
+          >
+            CONFIGURE TRIGGER RULES
+          </Link>
+          <Link
+            href="/admin/connectors"
+            className="px-lg py-sm font-mono-technical text-[10px] border border-border-muted text-on-surface-variant hover:border-primary"
+          >
+            MANAGE CONNECTORS
+          </Link>
+          <Link
+            href="/admin/projects"
+            className="px-lg py-sm font-mono-technical text-[10px] border border-border-muted text-on-surface-variant hover:border-primary"
+          >
+            ONBOARD PROJECT
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── main export ─────────────────────────────────────────────────────────────
 
 export default function OrchestrationClient({
-  projectName,
-  groups,
-  programStats,
+  sourceGroups,
+  enterpriseStats,
+  connectorHealth,
+  projectCount,
 }: {
-  projectName: string;
-  groups: ConnectorGroup[];
-  programStats: ProgramStats;
+  sourceGroups: SourceGroup[];
+  enterpriseStats: EnterpriseStats;
+  connectorHealth: ConnectorHealth[];
+  projectCount: number;
 }) {
-  const [mode, setMode] = useState<ViewMode>("program");
-  const [selectedConnectorIdx, setSelectedConnectorIdx] = useState(0);
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([0]));
   const [filter, setFilter] = useState<FilterStatus>("all");
 
-  const allCases = groups.flatMap((g) => g.cases);
-
-  function filterCase(c: OrchestrationCase): boolean {
-    if (filter === "all") return true;
-    if (filter === "blocked") return c.gates.some((g) => g.status === "REJECTED" && !g.skipped);
-    if (filter === "pending") return c.gates.some((g) => g.pendingApprovalId && !g.skipped);
-    if (filter === "enhanced") return c.riskScore?.intensity === "enhanced";
-    if (filter === "regulated") return c.riskScore?.intensity === "regulated";
-    return true;
-  }
+  const allCases = sourceGroups.flatMap((g) => g.cases);
 
   const filterCounts = {
     blocked: allCases.filter((c) => c.gates.some((g) => g.status === "REJECTED" && !g.skipped))
       .length,
     pending: allCases.filter((c) => c.gates.some((g) => g.pendingApprovalId && !g.skipped)).length,
-    enhanced: allCases.filter((c) => c.riskScore?.intensity === "enhanced").length,
-    regulated: allCases.filter((c) => c.riskScore?.intensity === "regulated").length,
   };
+
+  const healthById = new Map(connectorHealth.map((h) => [h.id, h]));
+
+  const visibleCount = sourceGroups.reduce(
+    (sum, g) => sum + g.cases.filter((c) => filterCase(c, filter)).length,
+    0
+  );
 
   return (
     <>
       {/* header */}
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-xl">
+        <div className="flex items-center gap-lg">
           <h1 className="font-headline-md text-headline-md text-on-surface">
             Governance Orchestration
           </h1>
-          <span className="font-mono-technical text-[11px] text-on-surface-variant">
-            {projectName}
+          <span className="font-mono-technical text-[10px] text-on-surface-variant">
+            ENTERPRISE · {projectCount} PROJECT{projectCount !== 1 ? "S" : ""} · ALL SOURCES
           </span>
         </div>
-
-        <div className="flex items-center gap-md">
-          {/* mode toggle */}
-          <div className="flex border border-border-muted">
-            <button
-              onClick={() => setMode("project")}
-              className={`px-lg py-xs font-mono-technical text-[10px] transition-colors ${
-                mode === "project"
-                  ? "bg-primary text-on-primary"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              PROJECT
-            </button>
-            <button
-              onClick={() => setMode("program")}
-              className={`px-lg py-xs font-mono-technical text-[10px] transition-colors ${
-                mode === "program"
-                  ? "bg-primary text-on-primary"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              PROGRAM
-            </button>
-          </div>
+        <div className="flex items-center gap-sm font-mono-technical text-[10px]">
+          <Link
+            href="/admin/trigger-rules"
+            className="px-md py-xs border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+          >
+            TRIGGER RULES
+          </Link>
+          <Link
+            href="/admin/connectors"
+            className="px-md py-xs border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+          >
+            CONNECTORS
+          </Link>
+          <Link
+            href="/admin/projects"
+            className="px-md py-xs bg-primary text-background hover:bg-primary/90 transition-colors"
+          >
+            + ONBOARD PROJECT
+          </Link>
         </div>
       </header>
 
+      {/* connector health */}
+      <ConnectorHealthStrip connectors={connectorHealth} />
+
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {/* program stats */}
+        {/* enterprise stats */}
         <div className="px-xl pt-xl pb-lg">
-          <ProgramStatsBar stats={programStats} />
+          <EnterpriseStatsBar stats={enterpriseStats} projectCount={projectCount} />
         </div>
 
-        {/* filter + context row */}
-        <div className="px-xl pb-lg flex items-center gap-lg">
+        {/* filter bar */}
+        <div className="px-xl pb-lg flex items-center gap-lg flex-wrap">
           <FilterBar active={filter} onChange={setFilter} counts={filterCounts} />
           <div className="flex-1" />
           <p className="font-mono-technical text-[10px] text-on-surface-variant">
-            {allCases.filter(filterCase).length} CASES · {groups.length} SOURCE
-            {groups.length !== 1 ? "S" : ""}
+            {visibleCount} CASE{visibleCount !== 1 ? "S" : ""} · {sourceGroups.length} SOURCE
+            {sourceGroups.length !== 1 ? "S" : ""}
           </p>
         </div>
 
         {allCases.length === 0 ? (
-          <div className="px-xl pb-xl">
-            <div className="bg-surface border border-border-muted p-xl text-center space-y-md">
-              <span
-                className="material-symbols-outlined text-on-surface-variant"
-                style={{ fontSize: 32 }}
-              >
-                account_tree
-              </span>
-              <p className="font-body-bold text-body-bold text-on-surface">
-                No governance cases yet
-              </p>
-              <p className="font-mono-technical text-[11px] text-on-surface-variant">
-                Cases are created when a Jira Portfolio Epic, GitHub PR, or GitLab MR matches a
-                configured trigger rule.
-              </p>
-            </div>
-          </div>
-        ) : mode === "project" ? (
-          /* ── project mode: connector selector + filtered cases ── */
-          <div className="px-xl pb-xl space-y-lg">
-            {/* connector tabs */}
-            {groups.length > 1 && (
-              <div className="flex items-center gap-xs border-b border-border-muted pb-md">
-                {groups.map((g, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedConnectorIdx(i)}
-                    className={`flex items-center gap-xs px-lg py-sm font-mono-technical text-[11px] border-b-2 transition-colors ${
-                      selectedConnectorIdx === i
-                        ? "border-primary text-primary"
-                        : "border-transparent text-on-surface-variant hover:text-on-surface"
-                    }`}
-                  >
-                    {g.connector?.name ?? "Unlinked"}
-                    <span className="font-mono-technical text-[9px] opacity-70">
-                      {g.stats.total}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* cases for selected connector */}
-            {(groups[selectedConnectorIdx]?.cases ?? []).filter(filterCase).map((c) => (
-              <CaseCard key={c.id} c={c} />
-            ))}
-
-            {(groups[selectedConnectorIdx]?.cases ?? []).filter(filterCase).length === 0 && (
-              <div className="bg-surface border border-border-muted p-xl text-center">
-                <p className="font-mono-technical text-[11px] text-on-surface-variant">
-                  No cases match the current filter.
-                </p>
-              </div>
-            )}
-          </div>
+          <EmptyState />
         ) : (
-          /* ── program mode: all sources collapsed/expanded ── */
           <div className="px-xl pb-xl space-y-md">
-            {groups.map((group, i) => {
-              const isExpanded = expandedGroups.has(i);
-              const visibleCases = group.cases.filter(filterCase);
-
-              return (
-                <div key={i} className="border border-border-muted">
-                  <ConnectorHeader
-                    group={group}
-                    expanded={isExpanded}
-                    onToggle={() => {
-                      setExpandedGroups((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(i)) next.delete(i);
-                        else next.add(i);
-                        return next;
-                      });
-                    }}
-                  />
-
-                  {isExpanded && (
-                    <div className="divide-y divide-border-muted">
-                      {visibleCases.length === 0 ? (
-                        <div className="px-xl py-lg text-center">
-                          <p className="font-mono-technical text-[10px] text-on-surface-variant">
-                            No cases match the current filter.
-                          </p>
-                        </div>
-                      ) : (
-                        visibleCases.map((c) => (
-                          <div key={c.id} className="border-0">
-                            <CaseCard c={c} />
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {sourceGroups.map((group) => (
+              <SourceGroupPanel
+                key={group.sourceType}
+                group={group}
+                health={group.connector ? healthById.get(group.connector.id) : undefined}
+                filter={filter}
+                defaultExpanded={
+                  group.stats.blocked > 0 || group.stats.pending > 0 || sourceGroups.length === 1
+                }
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* footer */}
-      <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center px-xl font-mono-technical text-[10px] text-on-surface-variant shrink-0">
-        <span>
-          ORCHESTRATION ENGINE: ACTIVE · {allCases.length} CASES · AI MODE:{" "}
-          {programStats.aiMode.replace(/_/g, " ")}
+      {/* status bar */}
+      <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center px-xl font-mono-technical text-[9px] text-on-surface-variant shrink-0 gap-xl">
+        <span>ORCHESTRATION ENGINE: ACTIVE</span>
+        <span>{enterpriseStats.totalCases} CASES TRACKED</span>
+        <span>AVG RISK: {Math.round(enterpriseStats.avgRiskScore * 100)}</span>
+        {enterpriseStats.blocked > 0 && (
+          <span className="text-critical">{enterpriseStats.blocked} BLOCKED</span>
+        )}
+        {enterpriseStats.pending > 0 && (
+          <span className="text-tertiary">{enterpriseStats.pending} PENDING APPROVAL</span>
+        )}
+        <span className="ml-auto">
+          {new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
         </span>
       </footer>
     </>
