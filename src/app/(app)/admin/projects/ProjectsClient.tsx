@@ -715,18 +715,24 @@ function NewProjectWizard({ onClose }: { onClose: () => void }) {
               ))}
             </div>
             <div className="flex gap-sm">
-              {["GitHub", "GitLab"].map((tool) => (
+              {[
+                { tool: "GitHub", hint: "Opens governance via PR webhook — configure in Admin → Connectors" },
+                { tool: "GitLab", hint: "Opens governance via MR webhook — configure in Admin → Connectors" },
+              ].map(({ tool, hint }) => (
                 <div
                   key={tool}
-                  className="flex-1 flex flex-col items-center gap-xs p-md border border-border-muted/50 opacity-40"
+                  className="flex-1 flex flex-col items-start gap-xs p-md border border-border-muted"
                 >
-                  <Icon name="hub" size={16} className="text-on-surface-variant" />
-                  <p className="font-mono-technical text-[9px] text-on-surface-variant">
-                    {tool.toUpperCase()} IMPORT
-                  </p>
-                  <span className="font-mono-technical text-[8px] border border-border-muted px-1 text-on-surface-variant/60">
-                    COMING SOON
-                  </span>
+                  <div className="flex items-center gap-xs w-full">
+                    <Icon name="hub" size={14} className="text-on-surface-variant" />
+                    <p className="font-mono-technical text-[9px] text-on-surface-variant flex-1">
+                      {tool.toUpperCase()} IMPORT
+                    </p>
+                    <span className="font-mono-technical text-[8px] border border-primary/30 px-1 text-primary/70">
+                      WEBHOOK
+                    </span>
+                  </div>
+                  <p className="font-mono-technical text-[9px] text-on-surface-variant/60">{hint}</p>
                 </div>
               ))}
             </div>
@@ -755,17 +761,29 @@ function NewProjectWizard({ onClose }: { onClose: () => void }) {
                         <label className="font-mono-technical text-[9px] text-on-surface-variant tracking-widest block mb-xs">
                           JIRA CONNECTOR
                         </label>
-                        <select
-                          value={importConnectorId}
-                          onChange={(e) => setImportConnectorId(e.target.value)}
-                          className="w-full bg-surface border border-border-muted px-md py-sm font-mono-technical text-[11px] outline-none focus:border-primary"
-                        >
-                          {jiraConnectors.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
+                        {/* Single connector → show as badge, no dropdown */}
+                        {jiraConnectors.length === 1 ? (
+                          <div className="flex items-center gap-sm px-md py-sm border border-primary/40 bg-primary/5">
+                            <span className="w-5 h-5 border border-primary bg-primary/10 flex items-center justify-center font-mono-technical text-[9px] text-primary shrink-0">J</span>
+                            <span className="font-mono-technical text-[11px] text-on-surface flex-1">{jiraConnectors[0].name}</span>
+                            <span className="font-mono-technical text-[9px] text-primary">ACTIVE</span>
+                          </div>
+                        ) : (
+                          /* Multiple connectors → styled button list */
+                          <div className="space-y-xs">
+                            {jiraConnectors.map((c) => (
+                              <button
+                                key={c.id}
+                                onClick={() => setImportConnectorId(c.id)}
+                                className={`w-full text-left flex items-center gap-sm px-md py-sm border font-mono-technical text-[11px] transition-colors ${importConnectorId === c.id ? "border-primary bg-primary/5 text-on-surface" : "border-border-muted text-on-surface-variant hover:border-primary/50"}`}
+                              >
+                                <span className={`w-5 h-5 border flex items-center justify-center text-[9px] shrink-0 ${importConnectorId === c.id ? "border-primary text-primary" : "border-border-muted text-on-surface-variant"}`}>J</span>
+                                <span className="flex-1">{c.name}</span>
+                                {importConnectorId === c.id && <Icon name="check" size={12} className="text-primary shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-xs">
                         {(["key", "board"] as const).map((m) => (
@@ -774,7 +792,7 @@ function NewProjectWizard({ onClose }: { onClose: () => void }) {
                             onClick={() => setJiraInputMode(m)}
                             className={`px-md py-sm font-mono-technical text-[10px] border transition-colors ${jiraInputMode === m ? "border-primary bg-primary/10 text-primary" : "border-border-muted text-on-surface-variant hover:border-primary/50"}`}
                           >
-                            {m === "key" ? "ENTER KEY" : "BROWSE BOARD"}
+                            {m === "key" ? "ENTER KEY" : "BROWSE BOARDS"}
                           </button>
                         ))}
                       </div>

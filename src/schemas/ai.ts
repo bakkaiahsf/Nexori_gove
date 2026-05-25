@@ -23,15 +23,12 @@ export type AIChatRequest = z.infer<typeof AIChatRequestSchema>;
 
 // ── Connector schemas ─────────────────────────────────────────────────────────
 export const SourceConnectorCreateSchema = z.object({
-  type: z.enum(["jira", "linear", "github", "azure-devops", "servicenow"]),
+  type: z.enum(["jira", "github", "gitlab", "linear", "azure-devops", "servicenow", "webhook"]),
   name: z.string().min(1).max(100),
   baseUrl: z.string().url(),
-  credentials: z.object({
-    email: z.string().email(),
-    apiToken: z.string().min(1),
-  }),
+  credentials: z.record(z.string()),  // flexible: email+apiToken for Jira, token for GitHub/GitLab, etc.
   webhookSecret: z.string().optional(),
-  projectKeys: z.array(z.string()).min(1),
+  projectKeys: z.array(z.string()).default([]),
   fieldMapping: z.record(z.string()).optional(),
   tenantId: z.string().optional(),
 });
