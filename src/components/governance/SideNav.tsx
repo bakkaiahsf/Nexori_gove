@@ -7,29 +7,27 @@ import { useSession, signOut } from "next-auth/react";
 import { canEmergencyLock } from "@/lib/auth";
 
 const DELIVERY_ITEMS = [
-  { href: "/", icon: "dashboard", label: "Enterprise Hub" },
-  { href: "/projects", icon: "folder_special", label: "Project Hub" },
-  { href: "/orchestration", icon: "account_tree", label: "Delivery Orchestration" },
-  { href: "/cases", icon: "folder_open", label: "Assurance Cases" },
+  { href: "/", icon: "dashboard", label: "Dashboard" },
+  { href: "/projects", icon: "folder_special", label: "Projects" },
+  { href: "/cases", icon: "folder_open", label: "Cases" },
   { href: "/release-readiness", icon: "rocket_launch", label: "Release Readiness" },
 ];
 
 const ASSURANCE_ITEMS = [
   { href: "/evidence", icon: "inventory_2", label: "Evidence Hub" },
   { href: "/intelligence", icon: "psychology", label: "Assurance Intelligence" },
+  { href: "/ai-control", icon: "security", label: "AI Control" },
   { href: "/timeline", icon: "history", label: "Flight Recorder" },
 ];
 
 const ADMIN_ITEMS = [
   { href: "/admin/programs", icon: "account_tree", label: "Programs" },
   { href: "/admin/projects", icon: "folder_special", label: "Projects & Sources" },
-  { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
   { href: "/admin/connectors", icon: "hub", label: "Connectors" },
-  { href: "/admin/experts", icon: "group", label: "Expert Profiles" },
   { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
-  { href: "/admin/gate-library", icon: "checklist", label: "Assurance Packs" },
-  { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
-  { href: "/admin/policy", icon: "description", label: "Policy Corpus" },
+  { href: "/orchestration", icon: "account_tree", label: "Orchestration" },
+  { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
+  { href: "/admin/policy", icon: "description", label: "Policy & Frameworks" },
 ];
 
 function Icon({ name, fill = false, size = 20 }: { name: string; fill?: boolean; size?: number }) {
@@ -231,13 +229,6 @@ export default function SideNav() {
       {/* Footer */}
       <div className="mt-auto px-lg">
         <div className="pt-xl border-t border-border-muted space-y-sm mb-lg">
-          <Link
-            href="/timeline"
-            className="flex items-center gap-md py-xs text-on-surface-variant hover:text-on-surface w-full text-left text-[12px] font-mono-technical transition-colors"
-          >
-            <Icon name="verified_user" size={14} />
-            <span>Audit Logs</span>
-          </Link>
           <Link
             href="/audit-export"
             className="flex items-center gap-md py-xs text-on-surface-variant hover:text-on-surface w-full text-left text-[12px] font-mono-technical transition-colors"
