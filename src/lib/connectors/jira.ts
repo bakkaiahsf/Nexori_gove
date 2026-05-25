@@ -239,7 +239,7 @@ export class JiraConnector implements SourceConnector {
         },
         issuetype: { name: "Story" },
         labels: data.labels ?? [],
-        parent: { key: data.epicKey },
+        ...(data.epicKey ? { parent: { key: data.epicKey } } : {}),
         ...(data.assignee ? { assignee: { emailAddress: data.assignee } } : {}),
       },
     };

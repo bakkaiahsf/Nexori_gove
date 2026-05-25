@@ -112,7 +112,7 @@ export default async function AIControl({
     <>
       {/* ── Top Bar ── */}
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <h1 className="font-headline-md text-headline-md text-on-surface">AI Control Center</h1>
+        <h1 className="font-headline-md text-headline-md text-on-surface">{project.name} — AI Control</h1>
         <div className="flex items-center gap-md">
           {isEmergencyLocked ? (
             <span className="px-2 py-1 bg-critical text-on-error font-mono-technical text-[10px] animate-pulse">

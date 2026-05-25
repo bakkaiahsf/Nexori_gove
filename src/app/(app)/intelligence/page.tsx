@@ -260,7 +260,8 @@ export default async function ComplianceIntelligencePage() {
           {/* Guardrails-as-Code Panel */}
           <GuardrailsPushPanel
             projects={projects}
-            connectors={connectors}
+            gitConnectors={connectors.filter((c) => c.type === "github" || c.type === "gitlab")}
+            jiraConnectors={connectors.filter((c) => c.type === "jira")}
             recentPushes={guardrailPushes.map((p) => ({
               ...p,
               projectName: projectMap.get(p.projectId)?.name ?? p.projectId,

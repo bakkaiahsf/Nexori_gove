@@ -31,7 +31,7 @@ export interface CreateEpicInput {
 }
 
 export interface CreateStoryInput {
-  epicKey: string;
+  epicKey?: string;
   title: string;
   description: string;
   labels?: string[];

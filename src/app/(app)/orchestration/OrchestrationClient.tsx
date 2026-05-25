@@ -706,6 +706,7 @@ export default function OrchestrationClient({
   projectCount: number;
 }) {
   const [filter, setFilter] = useState<FilterStatus>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   const allCases = sourceGroups.flatMap((g) => g.cases);
 
@@ -717,10 +718,16 @@ export default function OrchestrationClient({
 
   const healthById = new Map(connectorHealth.map((h) => [h.id, h]));
 
-  const visibleCount = sourceGroups.reduce(
+  const visibleGroups = sourceFilter === "all"
+    ? sourceGroups
+    : sourceGroups.filter((g) => g.sourceType === sourceFilter);
+
+  const visibleCount = visibleGroups.reduce(
     (sum, g) => sum + g.cases.filter((c) => filterCase(c, filter)).length,
     0
   );
+
+  const sourceTypes = [...new Set(sourceGroups.map((g) => g.sourceType))];
 
   return (
     <>
@@ -766,7 +773,7 @@ export default function OrchestrationClient({
         </div>
 
         {/* filter bar */}
-        <div className="px-xl pb-lg flex items-center gap-lg flex-wrap">
+        <div className="px-xl pb-xs flex items-center gap-lg flex-wrap">
           <FilterBar active={filter} onChange={setFilter} counts={filterCounts} />
           <div className="flex-1" />
           <p className="font-mono-technical text-[10px] text-on-surface-variant">
@@ -775,18 +782,43 @@ export default function OrchestrationClient({
           </p>
         </div>
 
+        {/* source type filter */}
+        {sourceTypes.length > 1 && (
+          <div className="px-xl pb-lg flex items-center gap-xs">
+            <span className="font-mono-technical text-[9px] text-on-surface-variant/50 tracking-widest mr-xs">SOURCE</span>
+            {(["all", ...sourceTypes] as string[]).map((s) => {
+              const meta = SOURCE_META[s] ?? SOURCE_META.manual;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setSourceFilter(s)}
+                  className={`flex items-center gap-xs px-md py-xs font-mono-technical text-[10px] border transition-colors ${
+                    sourceFilter === s
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border-muted text-on-surface-variant hover:border-on-surface-variant"
+                  }`}
+                >
+                  {s === "all" ? "ALL" : (
+                    <><span className={`font-bold ${meta.color.split(" ")[0]}`}>{meta.icon}</span> {s.toUpperCase()}</>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {allCases.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="px-xl pb-xl space-y-md">
-            {sourceGroups.map((group) => (
+            {visibleGroups.map((group) => (
               <SourceGroupPanel
                 key={group.sourceType}
                 group={group}
                 health={group.connector ? healthById.get(group.connector.id) : undefined}
                 filter={filter}
                 defaultExpanded={
-                  group.stats.blocked > 0 || group.stats.pending > 0 || sourceGroups.length === 1
+                  group.stats.blocked > 0 || group.stats.pending > 0 || visibleGroups.length === 1
                 }
               />
             ))}
