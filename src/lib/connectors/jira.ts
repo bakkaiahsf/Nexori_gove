@@ -286,6 +286,30 @@ export class JiraConnector implements SourceConnector {
     });
   }
 
+  async listProjects(): Promise<Array<{ key: string; name: string; id: string }>> {
+    const res = await this.jiraFetch<Array<{ key: string; name: string; id: string }>>(
+      "/project?maxResults=100&orderBy=name"
+    );
+    return res.map((p) => ({ key: p.key, name: p.name, id: p.id }));
+  }
+
+  async listBoards(): Promise<Array<{ id: string; name: string; type: string }>> {
+    try {
+      type BoardList = { values: Array<{ id: number; name: string; type: string }> };
+      const res = await fetch(`${this.baseUrl}/rest/agile/1.0/board?maxResults=50`, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${this.credentials.email}:${this.credentials.apiToken}`).toString("base64")}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!res.ok) return [];
+      const data = await res.json() as BoardList;
+      return (data.values ?? []).map((b) => ({ id: String(b.id), name: b.name, type: b.type }));
+    } catch {
+      return [];
+    }
+  }
+
   async fetchConfluencePage(url: string): Promise<string> {
     // Extract page ID from Confluence URL and fetch content via Confluence REST API
     const pageIdMatch = url.match(/pageId=(\d+)|\/pages\/(\d+)/);

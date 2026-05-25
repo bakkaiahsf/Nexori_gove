@@ -1,5 +1,4 @@
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 import { RegulatoryFramework } from "@prisma/client";
 import FrameworkConfigClient from "./FrameworkConfigClient";
 
@@ -127,16 +126,19 @@ const FRAMEWORK_LIBRARY: FrameworkInfo[] = [
   },
 ];
 
-export default async function FrameworksPage() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true, key: true, domain: true },
-  });
+export default async function FrameworksPage({
+  searchParams,
+}: {
+  searchParams: { projectId?: string };
+}) {
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, name: true, key: true, domain: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, key: true, domain: true } });
 
   if (!project) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="font-mono-technical text-on-surface-variant text-[12px]">No project found.</p>
+        <p className="font-mono-technical text-on-surface-variant text-[12px]">No active project found.</p>
       </div>
     );
   }

@@ -1,23 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { AIControlMode } from "@prisma/client";
-import { getAIControlSetting, setAIControlMode, DEMO_PROJECT_KEY } from "@/lib/governance";
+import { getAIControlSetting, setAIControlMode } from "@/lib/governance";
 import prisma from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-async function resolveProjectId(): Promise<string | null> {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
+async function resolveProjectId(projectId?: string): Promise<string | null> {
+  if (projectId) return projectId;
+  const project = await prisma.project.findFirst({
+    where: { status: "active" },
+    orderBy: { createdAt: "asc" },
     select: { id: true },
   });
   return project?.id ?? null;
 }
 
-export async function GET() {
-  const projectId = await resolveProjectId();
-  if (!projectId) return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  const setting = await getAIControlSetting(projectId);
+export async function GET(req: NextRequest) {
+  const projectId = req.nextUrl.searchParams.get("projectId") ?? undefined;
+  const resolvedId = await resolveProjectId(projectId);
+  if (!resolvedId) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const setting = await getAIControlSetting(resolvedId);
   return NextResponse.json(setting ?? { mode: AIControlMode.AI_ASSIST });
 }
 
@@ -28,10 +31,12 @@ const ModeUpdateSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const projectId = await resolveProjectId();
-  if (!projectId) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  const body: unknown = await req.json().catch(() => ({}));
+  const explicitProjectId = (body as Record<string, unknown>).projectId as string | undefined;
+  const resolvedId = await resolveProjectId(explicitProjectId);
+  if (!resolvedId) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
-  const parsed = ModeUpdateSchema.safeParse(await req.json().catch(() => ({})));
+  const parsed = ModeUpdateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", issues: parsed.error.issues },
@@ -40,6 +45,6 @@ export async function POST(req: NextRequest) {
   }
 
   const { mode, setBy, reason } = parsed.data;
-  const result = await setAIControlMode(projectId, mode, setBy ?? "bakkaiahsf@gmail.com", reason);
+  const result = await setAIControlMode(resolvedId, mode, setBy ?? "bakkaiahsf@gmail.com", reason);
   return NextResponse.json({ mode: result.mode, setAt: result.setAt });
 }

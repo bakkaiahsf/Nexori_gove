@@ -1,5 +1,4 @@
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +13,14 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
   );
 }
 
-export default async function AuditExport() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true, key: true },
-  });
+export default async function AuditExport({
+  searchParams,
+}: {
+  searchParams: { projectId?: string };
+}) {
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, name: true, key: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, key: true } });
 
   const [eventsCount, evidenceCount, mappingsCount, risksCount, gatesCount, thirdPartyCount] =
     project
@@ -204,7 +206,7 @@ export default async function AuditExport() {
             <span className="w-2 h-2 rounded-full bg-primary" />
             <span>AUDIT_ENGINE: READY</span>
           </div>
-          <span>PROJECT: {project?.key ?? DEMO_PROJECT_KEY}</span>
+          <span>PROJECT: {project?.key ?? "—"}</span>
         </div>
         <span className="font-bold text-on-surface">v0.1.0-MVP</span>
       </footer>

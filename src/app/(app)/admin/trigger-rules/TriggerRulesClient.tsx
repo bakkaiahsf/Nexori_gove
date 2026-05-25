@@ -83,6 +83,13 @@ const ACTION_META: Record<TriggerAction, { label: string; desc: string; cls: str
   },
 };
 
+const RETRY_MESSAGES: Record<string, string> = {
+  "error:api_key": "API key invalid — update connector credentials",
+  "error:permissions": "Token lacks read permission on this repo/board",
+  "error:not_found": "Source project not found — verify the board or repo reference",
+  "error:rate_limited": "Rate limited by source API — next retry in 60s",
+};
+
 interface Rule {
   id: string;
   name: string;
@@ -94,6 +101,10 @@ interface Rule {
   priority: number;
   enabled: boolean;
   createdAt: string;
+  sourceProjectRef?: string | null;
+  sourceBoardRef?: string | null;
+  lastRunAt?: string | null;
+  lastRunResult?: string | null;
 }
 
 interface Evaluation {
@@ -134,6 +145,8 @@ const DEFAULT_FORM = {
   action: "FULL_PIPELINE" as TriggerAction,
   priority: 100,
   conditions: [] as Array<{ field: string; op: string; value: string }>,
+  connectorId: "",
+  sourceProjectRef: "",
 };
 
 export default function TriggerRulesClient({
@@ -352,6 +365,7 @@ export default function TriggerRulesClient({
                       source: e.target.value,
                       eventType: EVENT_TYPES[e.target.value]?.[0] ?? "",
                       conditions: [],
+                      connectorId: connectors.find((c) => c.type === e.target.value)?.id ?? "",
                     }))
                   }
                   className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
@@ -378,6 +392,47 @@ export default function TriggerRulesClient({
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Source project reference */}
+            <div className="grid grid-cols-2 gap-lg">
+              <div>
+                <label className="font-mono-technical text-[10px] text-on-surface-variant block mb-sm">
+                  CONNECTOR INSTANCE
+                </label>
+                <select
+                  value={form.connectorId}
+                  onChange={(e) => setForm((f) => ({ ...f, connectorId: e.target.value }))}
+                  className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
+                >
+                  <option value="">— any connector —</option>
+                  {connectors
+                    .filter((c) => c.type === form.source && c.enabled)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono-technical text-[10px] text-on-surface-variant block mb-sm">
+                  SOURCE PROJECT / REPO REF
+                  <span className="ml-1 opacity-60">(optional scope)</span>
+                </label>
+                <input
+                  value={form.sourceProjectRef}
+                  onChange={(e) => setForm((f) => ({ ...f, sourceProjectRef: e.target.value }))}
+                  placeholder={
+                    form.source === "jira"
+                      ? "e.g. BANK, PAYM (Jira project key)"
+                      : form.source === "github"
+                        ? "e.g. org/repo-name"
+                        : "e.g. group/project-path"
+                  }
+                  className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
+                />
               </div>
             </div>
 
@@ -562,6 +617,11 @@ export default function TriggerRulesClient({
                         <span className="font-mono-technical text-[10px] text-on-surface-variant/50">
                           Matches all {rule.eventType} events
                         </span>
+                      )}
+                      {rule.lastRunResult && rule.lastRunResult !== "ok" && (
+                        <p className="font-mono-technical text-[10px] text-critical mt-xs">
+                          RETRY: {RETRY_MESSAGES[rule.lastRunResult] ?? rule.lastRunResult}
+                        </p>
                       )}
                     </div>
                     <div className="flex items-center gap-md shrink-0">

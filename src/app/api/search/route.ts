@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +12,10 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (q.length < 2) return NextResponse.json({ cases: [], events: [], risks: [], evidence: [] });
 
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true },
-  });
+  const projectId = req.nextUrl.searchParams.get("projectId");
+  const project = projectId
+    ? await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true } });
   if (!project) return NextResponse.json({ cases: [], events: [], risks: [], evidence: [] });
 
   const [cases, events, risks, evidence] = await Promise.all([

@@ -96,6 +96,9 @@ export async function POST(req: NextRequest) {
     ? data.messages
     : [{ role: "system" as const, content: GOVERNANCE_SYSTEM_PROMPT }, ...data.messages];
 
+  // AbortController lets us cancel the upstream Anthropic call when the client disconnects
+  const abort = new AbortController();
+
   const readable = new ReadableStream({
     async start(controller) {
       let tokensIn = 0;
@@ -103,6 +106,11 @@ export async function POST(req: NextRequest) {
       let fullText = "";
       let outcome: "success" | "error" = "success";
       let errorMsg: string | undefined;
+
+      // Safe enqueue — silently drops if the client has already disconnected
+      function safeEnqueue(obj: unknown) {
+        try { controller.enqueue(enc(obj)); } catch { /* client gone */ }
+      }
 
       try {
         if (provider === "anthropic") {
@@ -122,17 +130,23 @@ export async function POST(req: NextRequest) {
             })),
           });
 
+          // Abort the upstream call when the client disconnects
+          abort.signal.addEventListener("abort", () => stream.abort());
+
           for await (const event of stream) {
+            if (abort.signal.aborted) break;
             if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
               const chunk = event.delta.text;
               fullText += chunk;
-              controller.enqueue(enc({ chunk }));
+              safeEnqueue({ chunk });
             }
           }
 
-          const finalMsg = await stream.finalMessage();
-          tokensIn = finalMsg.usage.input_tokens;
-          tokensOut = finalMsg.usage.output_tokens;
+          if (!abort.signal.aborted) {
+            const finalMsg = await stream.finalMessage();
+            tokensIn = finalMsg.usage.input_tokens;
+            tokensOut = finalMsg.usage.output_tokens;
+          }
         } else {
           // OpenAI streaming
           const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -144,10 +158,11 @@ export async function POST(req: NextRequest) {
           });
 
           for await (const chunk of response) {
+            if (abort.signal.aborted) break;
             const text = chunk.choices[0]?.delta?.content ?? "";
             if (text) {
               fullText += text;
-              controller.enqueue(enc({ chunk: text }));
+              safeEnqueue({ chunk: text });
             }
             if (chunk.usage) {
               tokensIn = chunk.usage.prompt_tokens;
@@ -156,12 +171,20 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (err) {
-        outcome = "error";
-        errorMsg = err instanceof Error ? err.message : String(err);
-        controller.enqueue(enc({ error: errorMsg }));
+        // Ignore abort errors — client intentionally closed connection
+        const isAbort =
+          err instanceof Error && (err.name === "AbortError" || err.message.includes("abort"));
+        if (!isAbort) {
+          outcome = "error";
+          errorMsg = err instanceof Error ? err.message : String(err);
+          safeEnqueue({ error: errorMsg });
+        } else {
+          outcome = "error";
+          errorMsg = "aborted";
+        }
       }
 
-      // Governance audit log — every AI call, always
+      // Governance audit log — always written, even on abort/error
       let usageEventId: string | undefined;
       try {
         const event = await prisma.aIUsageEvent.create({
@@ -184,16 +207,19 @@ export async function POST(req: NextRequest) {
         // DB log failure must not kill the response
       }
 
-      controller.enqueue(enc({ done: true, usageEventId, tokensIn, tokensOut }));
-      controller.close();
+      safeEnqueue({ done: true, usageEventId, tokensIn, tokensOut });
+      try { controller.close(); } catch { /* already closed */ }
+    },
+    cancel() {
+      // Client disconnected — signal upstream to stop
+      abort.abort();
     },
   });
 
   return new Response(readable, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      "Cache-Control": "no-cache, no-transform",
       "X-Accel-Buffering": "no",
     },
   });

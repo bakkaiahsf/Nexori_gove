@@ -3,7 +3,6 @@ import {
   getAIControlSetting,
   getPendingApprovals,
   getRegulatoryData,
-  DEMO_PROJECT_KEY,
 } from "@/lib/governance";
 import AIModeToggle from "@/components/governance/AIModeToggle";
 import ApproveButton from "@/components/governance/ApproveButton";
@@ -38,17 +37,23 @@ const SERVICE_LABEL: Record<string, string> = {
   identity: "IDENTITY",
 };
 
-export default async function AIControl() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true },
-  });
+export default async function AIControl({
+  searchParams,
+}: {
+  searchParams: { projectId?: string };
+}) {
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, name: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true } });
 
   if (!project) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="font-mono-technical text-on-surface-variant text-[12px]">
-          No project — run: <code className="text-primary">npx prisma db seed</code>
+          No active projects —{" "}
+          <a href="/admin/projects" className="text-primary underline">
+            configure one
+          </a>
         </p>
       </div>
     );

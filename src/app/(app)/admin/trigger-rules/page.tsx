@@ -90,6 +90,7 @@ export default async function TriggerRulesPage({
             conditions: r.conditions as Array<{ field: string; op: string; value: string }>,
             createdAt: r.createdAt.toISOString(),
             updatedAt: r.updatedAt.toISOString(),
+            lastRunAt: r.lastRunAt?.toISOString() ?? null,
           }))}
           evaluations={evaluations.map((e) => ({
             ...e,

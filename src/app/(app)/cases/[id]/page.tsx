@@ -5,6 +5,7 @@ import { GateStatus } from "@prisma/client";
 import GateActions from "@/components/governance/GateActions";
 import { computeDeliveryConfidence } from "@/lib/governance/confidence";
 import AiReviewPanel from "@/components/governance/AiReviewPanel";
+import CaseCommentBox from "@/components/governance/CaseCommentBox";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +97,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
         orderBy: { submittedAt: "desc" },
         take: 10,
       },
+      comments: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -843,6 +845,18 @@ export default async function CaseDetail({ params }: { params: { id: string } })
               )}
             </div>
           </div>
+          {/* ── Comments + Lifecycle Actions ── */}
+          <CaseCommentBox
+            caseId={params.id}
+            caseStatus={governanceCase.status}
+            ownedBy={governanceCase.ownedBy ?? null}
+            comments={governanceCase.comments.map((c) => ({
+              id: c.id,
+              authorEmail: c.authorEmail,
+              body: c.body,
+              createdAt: c.createdAt.toISOString(),
+            }))}
+          />
         </div>
       </div>
 

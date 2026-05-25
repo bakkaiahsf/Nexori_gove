@@ -1,15 +1,18 @@
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY, getAIControlSetting } from "@/lib/governance";
+import { getAIControlSetting } from "@/lib/governance";
 import { AIControlMode } from "@prisma/client";
 import GovernanceChatClient from "./GovernanceChatClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function GovernanceChatPage() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true },
-  });
+export default async function GovernanceChatPage({
+  searchParams,
+}: {
+  searchParams: { projectId?: string };
+}) {
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, name: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true } });
 
   const [aiSetting, recentCases, activePolicies] = await Promise.all([
     project ? getAIControlSetting(project.id) : Promise.resolve(null),

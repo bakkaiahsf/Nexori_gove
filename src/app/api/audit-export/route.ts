@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const format = req.nextUrl.searchParams.get("format") ?? "json";
 
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true, key: true },
-  });
+  const projectId = req.nextUrl.searchParams.get("projectId");
+  const project = projectId
+    ? await prisma.project.findUnique({ where: { id: projectId }, select: { id: true, name: true, key: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, key: true } });
 
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });

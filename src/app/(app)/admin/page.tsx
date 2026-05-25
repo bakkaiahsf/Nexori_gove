@@ -1,6 +1,5 @@
 import Link from "next/link";
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 
 export const dynamic = "force-dynamic";
 
@@ -70,11 +69,14 @@ const ADMIN_SECTIONS = [
   },
 ];
 
-export default async function AdminHub() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true, name: true, key: true },
-  });
+export default async function AdminHub({
+  searchParams,
+}: {
+  searchParams: { projectId?: string };
+}) {
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, name: true, key: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, key: true } });
 
   const [connectorCount, ruleCount, gateCount] = await Promise.all([
     prisma.sourceConnector.count(),

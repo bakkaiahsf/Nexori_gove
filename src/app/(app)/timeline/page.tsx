@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import prisma from "@/lib/db";
-import { getGovernanceEvents, DEMO_PROJECT_KEY } from "@/lib/governance";
 import { GovernanceEventType } from "@prisma/client";
+import TimelineFilterBar from "@/components/governance/TimelineFilterBar";
 
 export const dynamic = "force-dynamic";
 
@@ -185,6 +186,31 @@ const EVENT_BADGE: Record<GovernanceEventType, { label: string; cls: string; dot
     cls: "bg-primary/10 text-primary border border-primary",
     dot: "bg-primary border-primary",
   },
+  CASE_RESOLVED: {
+    label: "RESOLVED",
+    cls: "bg-primary/20 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  CASE_REOPENED: {
+    label: "REOPENED",
+    cls: "bg-tertiary/20 text-tertiary border border-tertiary",
+    dot: "bg-tertiary border-tertiary",
+  },
+  CASE_COMMENT_ADDED: {
+    label: "COMMENT",
+    cls: "bg-surface-container border border-border-muted text-on-surface-variant",
+    dot: "bg-on-surface-variant border-on-surface-variant",
+  },
+  CASE_ASSIGNED: {
+    label: "ASSIGNED",
+    cls: "bg-surface-container border border-border-muted text-on-surface-variant",
+    dot: "bg-on-surface-variant border-on-surface-variant",
+  },
+  EVIDENCE_REQUESTED: {
+    label: "EVIDENCE REQ",
+    cls: "bg-tertiary/10 text-tertiary border border-tertiary",
+    dot: "bg-tertiary border-tertiary",
+  },
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -270,23 +296,62 @@ function eventDetail(
   }
 }
 
-export default async function Timeline() {
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true },
-  });
+export default async function Timeline({
+  searchParams,
+}: {
+  searchParams: { projectId?: string; type?: string; from?: string; to?: string };
+}) {
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, key: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, key: true } });
 
   if (!project) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="font-mono-technical text-on-surface-variant text-[12px]">
-          No project — run: <code className="text-primary">npx prisma db seed</code>
+          No active projects —{" "}
+          <a href="/admin/projects" className="text-primary underline">
+            configure one
+          </a>
         </p>
       </div>
     );
   }
 
-  const events = await getGovernanceEvents(project.id, 50);
+  const typeFilter =
+    searchParams.type && searchParams.type in GovernanceEventType
+      ? (searchParams.type as GovernanceEventType)
+      : undefined;
+
+  const fromDate = searchParams.from ? new Date(searchParams.from) : undefined;
+  const toDate = searchParams.to ? new Date(searchParams.to + "T23:59:59Z") : undefined;
+
+  const events = await prisma.governanceEvent.findMany({
+    where: {
+      projectId: project.id,
+      ...(typeFilter ? { type: typeFilter } : {}),
+...(fromDate || toDate
+        ? {
+            timestamp: {
+              ...(fromDate ? { gte: fromDate } : {}),
+              ...(toDate ? { lte: toDate } : {}),
+            },
+          }
+        : {}),
+    },
+    orderBy: { timestamp: "desc" },
+    take: 100,
+  });
+
+  // Serialise for client components
+  const serialisedEvents = events.map((e) => ({
+    id: e.id,
+    type: e.type,
+    actorEmail: e.actorEmail ?? null,
+    timestamp: e.timestamp.toISOString(),
+    resourceId: e.resourceId ?? null,
+    resourceType: e.resourceType ?? null,
+  }));
 
   // Group events by calendar date
   const grouped = events.reduce<Record<string, typeof events>>((acc, e) => {
@@ -319,10 +384,20 @@ export default async function Timeline() {
             </p>
           </div>
           <div className="font-mono-technical text-[10px] text-on-surface-variant border border-border-muted px-2 py-1">
-            {DEMO_PROJECT_KEY}
+            {project.key}
           </div>
         </div>
       </header>
+
+      {/* ── Filter Bar ── */}
+      <Suspense fallback={null}>
+        <TimelineFilterBar
+          events={serialisedEvents}
+          activeType={searchParams.type}
+          activeFrom={searchParams.from}
+          activeTo={searchParams.to}
+        />
+      </Suspense>
 
       {/* ── Timeline Canvas ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-xl py-xl">

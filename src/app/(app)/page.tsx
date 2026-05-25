@@ -5,7 +5,6 @@ import {
   getProjectSummary,
   getPendingApprovals,
   getEscalations,
-  DEMO_PROJECT_KEY,
 } from "@/lib/governance";
 import { computeDeliveryConfidence } from "@/lib/governance/confidence";
 import StatusBarClient from "@/components/governance/StatusBarClient";
@@ -67,18 +66,24 @@ function DeliveryGauge({ score, verdict }: { score: number; verdict: string }) {
   );
 }
 
-export default async function CommandCenter() {
+export default async function CommandCenter({
+  searchParams,
+}: {
+  searchParams: { projectId?: string };
+}) {
   const session = await getServerSession(authOptions);
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true },
-  });
+  const project = searchParams.projectId
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true } });
 
   if (!project) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="font-mono-technical text-on-surface-variant text-[12px]">
-          No project data — run: <code className="text-primary">npx prisma db seed</code>
+          No active projects — configure one in{" "}
+          <a href="/admin/projects" className="text-primary underline">
+            Admin → Projects
+          </a>
         </p>
       </div>
     );

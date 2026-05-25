@@ -50,6 +50,11 @@ enum GovernanceEventType {
   JIRA_WRITEBACK_COMPLETE
   // Case lifecycle
   CASE_CREATED
+  CASE_RESOLVED
+  CASE_REOPENED
+  CASE_COMMENT_ADDED
+  CASE_ASSIGNED
+  EVIDENCE_REQUESTED
   // Trigger engine events
   TRIGGER_MATCHED
   TRIGGER_SKIPPED
@@ -320,6 +325,8 @@ model GovernanceCase {
   sourceEpicKey     String?  // e.g. "BANK-120" — originating Jira epic
   sourceGovEpicKey  String?  // e.g. "BANK-145" — [GOV] epic written back to Jira
   sourceConnectorId String?  // FK to SourceConnector (soft ref — no Prisma relation to avoid circular)
+  resolvedAt        DateTime?
+  resolvedBy        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -329,8 +336,20 @@ model GovernanceCase {
   context          GovernanceContext?
   riskScore        GovernanceRiskScore?
   adaptivePipeline AdaptivePipeline?
+  comments         CaseComment[]
 
   @@map("governance_cases")
+}
+
+model CaseComment {
+  id          String         @id @default(cuid())
+  caseId      String
+  authorEmail String
+  body        String
+  createdAt   DateTime       @default(now())
+  case        GovernanceCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("case_comments")
 }
 
 model GovernanceGate {
@@ -773,12 +792,17 @@ model GovernanceTriggerRule {
   source      String        // "jira"|"github"|"gitlab"
   eventType   String        // "epic.created"|"pr.opened"|"mr.merged"|"issue.updated"|...
   conditions  Json          // [{ field: string, op: "eq"|"contains"|"gt"|"lt"|"matches", value: string|number }]
-  action      TriggerAction
-  priority    Int           @default(100) // higher priority evaluated first
-  enabled     Boolean       @default(true)
-  createdBy   String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  action            TriggerAction
+  priority          Int           @default(100) // higher priority evaluated first
+  enabled           Boolean       @default(true)
+  createdBy         String
+  sourceProjectRef  String?   // "owner/repo" | "namespace/project" | "JIRA-KEY"
+  sourceBoardRef    String?   // Jira board ID / GitHub project number
+  scheduleCron      String?   // cron expression for monitoring, e.g. "0 */6 * * *"
+  lastRunAt         DateTime?
+  lastRunResult     String?   // "ok"|"error:api_key"|"error:permissions"|"error:not_found"|"error:rate_limited"
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   evaluations TriggerEvaluation[]

@@ -37,11 +37,11 @@ export class AIBlockedError extends Error {
 
 // ── Resolve effective provider + model from request or env defaults ───────────
 function resolveProvider(req: AIChatRequest): { provider: AIProvider; model: string } {
-  const provider = req.provider ?? (process.env.AI_DEFAULT_PROVIDER as AIProvider) ?? "openai";
+  const provider = req.provider ?? (process.env.AI_DEFAULT_PROVIDER as AIProvider) ?? "anthropic";
   const defaultModel =
-    provider === "openai"
-      ? (process.env.AI_DEFAULT_MODEL ?? "gpt-4o-mini")
-      : (process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5-20251001");
+    provider === "anthropic"
+      ? (process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5-20251001")
+      : (process.env.AI_DEFAULT_MODEL ?? "gpt-4o-mini");
   return { provider, model: req.model ?? defaultModel };
 }
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/db";
-import { DEMO_PROJECT_KEY } from "@/lib/governance";
 import { GovernanceEventType } from "@prisma/client";
 
 const CreateCaseSchema = z.object({
@@ -9,6 +8,7 @@ const CreateCaseSchema = z.object({
   description: z.string().max(2000).optional(),
   phase: z.string().min(1),
   createdBy: z.string().email().optional(),
+  projectId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -24,15 +24,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
-  const project = await prisma.project.findUnique({
-    where: { key: DEMO_PROJECT_KEY },
-    select: { id: true },
-  });
+  const { title, description, phase, createdBy, projectId: explicitProjectId } = parsed.data;
+  const project = explicitProjectId
+    ? await prisma.project.findUnique({ where: { id: explicitProjectId }, select: { id: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true } });
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
-
-  const { title, description, phase, createdBy } = parsed.data;
 
   const result = await prisma.$transaction(async (tx) => {
     const govCase = await tx.governanceCase.create({

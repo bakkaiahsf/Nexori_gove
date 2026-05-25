@@ -6,45 +6,30 @@ import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { canEmergencyLock } from "@/lib/auth";
 
-const NAV_GROUPS = [
-  {
-    label: "GOVERNANCE",
-    items: [
-      { href: "/orchestration", icon: "account_tree", label: "Delivery Orchestration" },
-      { href: "/release-readiness", icon: "rocket_launch", label: "Release Readiness" },
-      { href: "/", icon: "dashboard", label: "Command Center" },
-      { href: "/cases", icon: "folder_open", label: "Cases" },
-      { href: "/timeline", icon: "history", label: "Flight Recorder" },
-      { href: "/evidence", icon: "inventory_2", label: "Evidence Hub" },
-    ],
-  },
-  {
-    label: "INTELLIGENCE",
-    items: [
-      { href: "/intelligence", icon: "psychology", label: "Assurance Intelligence" },
-      { href: "/ai-control", icon: "security", label: "Intelligence Controls" },
-    ],
-  },
-  {
-    label: "ADMIN",
-    items: [
-      { href: "/admin/programs", icon: "account_tree", label: "Programs" },
-      { href: "/admin/projects", icon: "folder_special", label: "Projects" },
-      { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
-      { href: "/admin/connectors", icon: "hub", label: "Connectors" },
-      { href: "/admin/experts", icon: "group", label: "Expert Profiles" },
-    ],
-  },
-  {
-    label: "PLATFORM CONFIG",
-    items: [
-      { href: "/admin", icon: "tune", label: "Configuration" },
-      { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
-      { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
-      { href: "/admin/gate-library", icon: "checklist", label: "Assurance Packs" },
-      { href: "/admin/policy", icon: "description", label: "Policy Corpus" },
-    ],
-  },
+const DELIVERY_ITEMS = [
+  { href: "/", icon: "dashboard", label: "Enterprise Hub" },
+  { href: "/projects", icon: "folder_special", label: "Project Hub" },
+  { href: "/orchestration", icon: "account_tree", label: "Delivery Orchestration" },
+  { href: "/cases", icon: "folder_open", label: "Assurance Cases" },
+  { href: "/release-readiness", icon: "rocket_launch", label: "Release Readiness" },
+];
+
+const ASSURANCE_ITEMS = [
+  { href: "/evidence", icon: "inventory_2", label: "Evidence Hub" },
+  { href: "/intelligence", icon: "psychology", label: "Assurance Intelligence" },
+  { href: "/timeline", icon: "history", label: "Flight Recorder" },
+];
+
+const ADMIN_ITEMS = [
+  { href: "/admin/programs", icon: "account_tree", label: "Programs" },
+  { href: "/admin/projects", icon: "folder_special", label: "Projects & Sources" },
+  { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
+  { href: "/admin/connectors", icon: "hub", label: "Connectors" },
+  { href: "/admin/experts", icon: "group", label: "Expert Profiles" },
+  { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
+  { href: "/admin/gate-library", icon: "checklist", label: "Assurance Packs" },
+  { href: "/admin/frameworks", icon: "policy", label: "Frameworks" },
+  { href: "/admin/policy", icon: "description", label: "Policy Corpus" },
 ];
 
 function Icon({ name, fill = false, size = 20 }: { name: string; fill?: boolean; size?: number }) {
@@ -122,6 +107,9 @@ export default function SideNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [signingOut, setSigningOut] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(() =>
+    ADMIN_ITEMS.some((i) => pathname === i.href || pathname.startsWith(i.href))
+  );
 
   const initials =
     session?.user?.name
@@ -148,25 +136,80 @@ export default function SideNav() {
           </div>
           <div>
             <p className="font-label-caps text-label-caps tracking-widest text-primary uppercase leading-none">
-              Enterprise Governance
+              NexoriOS
             </p>
             <p className="text-[10px] text-on-surface-variant font-mono-technical mt-0.5">
-              Operational Control
+              Delivery Confidence
             </p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto space-y-lg px-0">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label}>
-            <p className="px-lg font-mono-technical text-[9px] text-on-surface-variant/50 tracking-widest mb-xs">
-              {group.label}
-            </p>
-            {group.items.map((item) => {
-              const active =
-                pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+      <nav className="flex-1 overflow-y-auto space-y-lg px-0 custom-scrollbar">
+        {/* DELIVERY group */}
+        <div>
+          <p className="px-lg font-mono-technical text-[9px] text-on-surface-variant/50 tracking-widest mb-xs">
+            DELIVERY
+          </p>
+          {DELIVERY_ITEMS.map((item) => {
+            const active =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname === item.href || pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-md px-lg py-sm transition-all duration-150 ${
+                  active
+                    ? "bg-secondary-container text-on-secondary-container border-r-2 border-primary"
+                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                }`}
+              >
+                <Icon name={item.icon} fill={active} size={18} />
+                <span className="font-body-bold text-body-bold text-[13px]">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* ASSURANCE group */}
+        <div>
+          <p className="px-lg font-mono-technical text-[9px] text-on-surface-variant/50 tracking-widest mb-xs">
+            ASSURANCE
+          </p>
+          {ASSURANCE_ITEMS.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-md px-lg py-sm transition-all duration-150 ${
+                  active
+                    ? "bg-secondary-container text-on-secondary-container border-r-2 border-primary"
+                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                }`}
+              >
+                <Icon name={item.icon} fill={active} size={18} />
+                <span className="font-body-bold text-body-bold text-[13px]">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* ADMIN CONSOLE — collapsible */}
+        <div>
+          <button
+            onClick={() => setAdminOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-lg py-xs text-on-surface-variant/50 hover:text-on-surface-variant transition-colors"
+          >
+            <p className="font-mono-technical text-[9px] tracking-widest">ADMIN CONSOLE</p>
+            <Icon name={adminOpen ? "expand_less" : "expand_more"} size={14} />
+          </button>
+          {adminOpen &&
+            ADMIN_ITEMS.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -182,8 +225,7 @@ export default function SideNav() {
                 </Link>
               );
             })}
-          </div>
-        ))}
+        </div>
       </nav>
 
       {/* Footer */}

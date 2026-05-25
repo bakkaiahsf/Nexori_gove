@@ -75,6 +75,10 @@ export interface SourceConnector {
   }): Promise<{ url?: string; number?: number }>;
 }
 
+import { JiraConnector, type JiraCredentials, type JiraFieldMapping } from "./jira";
+import { GitHubConnector } from "./github";
+import { GitLabConnector } from "./gitlab";
+
 /** Instantiate the right connector implementation from a DB record */
 export function getConnector(record: {
   type: string;
@@ -84,9 +88,27 @@ export function getConnector(record: {
   projectKeys?: string[];
   fieldMapping?: unknown;
 }): SourceConnector {
-  const mod = require(`./${record.type}`) as Record<string, new (r: unknown) => SourceConnector>; // eslint-disable-line
-  const names: Record<string, string> = { jira: "JiraConnector", github: "GitHubConnector", gitlab: "GitLabConnector" };
-  const className = names[record.type];
-  if (!className || !mod[className]) throw new Error(`No connector implementation for type: ${record.type}`);
-  return new mod[className](record);
+  const creds = record.credentials as Record<string, string>;
+
+  if (record.type === "jira") {
+    const jiraCreds = creds as unknown as JiraCredentials;
+    const fieldMapping = (record.fieldMapping ?? {}) as JiraFieldMapping;
+    const defaultProjectKey = record.projectKeys?.[0];
+    return new JiraConnector(record.baseUrl, jiraCreds, fieldMapping, defaultProjectKey);
+  }
+
+  if (record.type === "github") {
+    const token = creds.token ?? creds.apiToken ?? "";
+    const owner = creds.owner ?? record.projectKeys?.[0]?.split("/")?.[0] ?? "";
+    const repo = creds.repo ?? record.projectKeys?.[0]?.split("/")?.[1] ?? "";
+    return new GitHubConnector({ token, owner, repo });
+  }
+
+  if (record.type === "gitlab") {
+    const token = creds.token ?? creds.apiToken ?? "";
+    const projectId = creds.projectId ?? record.projectKeys?.[0] ?? "";
+    return new GitLabConnector({ token, baseUrl: record.baseUrl, projectId });
+  }
+
+  throw new Error(`No connector implementation for type: ${record.type}`);
 }
