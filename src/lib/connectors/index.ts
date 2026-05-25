@@ -84,18 +84,9 @@ export function getConnector(record: {
   projectKeys?: string[];
   fieldMapping?: unknown;
 }): SourceConnector {
-  // Lazy import to avoid bundling all connectors in every route
-  if (record.type === "jira") {
-    const { JiraConnector } = require("./jira");
-    return new JiraConnector(record);
-  }
-  if (record.type === "github") {
-    const { GitHubConnector } = require("./github");
-    return new GitHubConnector(record);
-  }
-  if (record.type === "gitlab") {
-    const { GitLabConnector } = require("./gitlab");
-    return new GitLabConnector(record);
-  }
-  throw new Error(`No connector implementation for type: ${record.type}`);
+  const mod = require(`./${record.type}`) as Record<string, new (r: unknown) => SourceConnector>; // eslint-disable-line
+  const names: Record<string, string> = { jira: "JiraConnector", github: "GitHubConnector", gitlab: "GitLabConnector" };
+  const className = names[record.type];
+  if (!className || !mod[className]) throw new Error(`No connector implementation for type: ${record.type}`);
+  return new mod[className](record);
 }

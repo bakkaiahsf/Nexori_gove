@@ -49,61 +49,107 @@ const FRAMEWORK_META: Record<
 const FRAMEWORK_ORDER = ["DORA", "EU_AI_ACT", "SOC2", "ISO_27001", "PCI_DSS", "GDPR"];
 
 export default async function ComplianceIntelligencePage() {
-  const [projects, coverageRaw, verifiedRaw, policyDocs, connectors, guardrailPushes] =
-    await Promise.all([
-      prisma.project.findMany({
-        select: { id: true, key: true, name: true },
-        orderBy: { name: "asc" },
-      }),
-      prisma.regulatoryMapping.groupBy({
-        by: ["framework"],
-        _count: { id: true },
-      }),
-      prisma.regulatoryMapping.groupBy({
-        by: ["framework"],
-        where: { verifiedAt: { not: null } },
-        _count: { id: true },
-      }),
-      prisma.policyDocument.findMany({
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          uploadedAt: true,
-          indexedAt: true,
-          _count: { select: { chunks: true } },
-        },
-        orderBy: { uploadedAt: "desc" },
-        take: 8,
-      }),
-      prisma.sourceConnector.findMany({
-        where: { enabled: true },
-        select: { id: true, type: true, name: true },
-      }),
-      prisma.guardrailPush.findMany({
-        orderBy: { generatedAt: "desc" },
-        take: 20,
-        select: {
-          id: true,
-          projectId: true,
-          framework: true,
-          repoPath: true,
-          prUrl: true,
-          status: true,
-          generatedAt: true,
-          mergedAt: true,
-        },
-      }),
-    ]);
+  let projects: Array<{ id: string; key: string; name: string }> = [];
+  let coverageRaw: Array<{ framework: string; _count: { id: number } }> = [];
+  let verifiedRaw: Array<{ framework: string; _count: { id: number } }> = [];
+  let policyDocs: Array<{
+    id: string;
+    title: string;
+    type: string;
+    uploadedAt: Date;
+    indexedAt: Date | null;
+    _count: { chunks: number };
+  }> = [];
+  let connectors: Array<{ id: string; type: string; name: string }> = [];
+  let guardrailPushes: Array<{
+    id: string;
+    projectId: string;
+    framework: string;
+    repoPath: string;
+    prUrl: string | null;
+    status: string;
+    generatedAt: Date;
+    mergedAt: Date | null;
+  }> = [];
+  let firstProject: { id: string; key: string; name: string } | undefined;
+  let aiSetting: { mode: string } | null = null;
+  let dbError = false;
 
-  // Use first project's AI mode for the query panel
-  const firstProject = projects[0];
-  const aiSetting = firstProject
-    ? await prisma.aIControlSetting.findUnique({
-        where: { projectId: firstProject.id },
-        select: { mode: true },
-      })
-    : null;
+  try {
+    [projects, coverageRaw, verifiedRaw, policyDocs, connectors, guardrailPushes] =
+      await Promise.all([
+        prisma.project.findMany({
+          select: { id: true, key: true, name: true },
+          orderBy: { name: "asc" },
+        }),
+        prisma.regulatoryMapping.groupBy({
+          by: ["framework"],
+          _count: { id: true },
+        }),
+        prisma.regulatoryMapping.groupBy({
+          by: ["framework"],
+          where: { verifiedAt: { not: null } },
+          _count: { id: true },
+        }),
+        prisma.policyDocument.findMany({
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            uploadedAt: true,
+            indexedAt: true,
+            _count: { select: { chunks: true } },
+          },
+          orderBy: { uploadedAt: "desc" },
+          take: 8,
+        }),
+        prisma.sourceConnector.findMany({
+          where: { enabled: true },
+          select: { id: true, type: true, name: true },
+        }),
+        prisma.guardrailPush.findMany({
+          orderBy: { generatedAt: "desc" },
+          take: 20,
+          select: {
+            id: true,
+            projectId: true,
+            framework: true,
+            repoPath: true,
+            prUrl: true,
+            status: true,
+            generatedAt: true,
+            mergedAt: true,
+          },
+        }),
+      ]);
+
+    firstProject = projects[0];
+    aiSetting = firstProject
+      ? await prisma.aIControlSetting.findUnique({
+          where: { projectId: firstProject.id },
+          select: { mode: true },
+        })
+      : null;
+  } catch {
+    dbError = true;
+  }
+
+  if (dbError) {
+    return (
+      <>
+        <header className="h-16 px-xl flex items-center border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+          <h1 className="font-headline-md text-headline-md text-on-surface">
+            Compliance Intelligence
+          </h1>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="font-mono-technical text-[11px] text-on-surface-variant">
+            INTELLIGENCE_DATA_UNAVAILABLE — Database connectivity issue. Check /api/health.
+          </p>
+        </div>
+      </>
+    );
+  }
 
   const coverageMap = Object.fromEntries(
     FRAMEWORK_ORDER.map((fw) => {

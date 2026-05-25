@@ -234,9 +234,11 @@ model GuardrailPush {
   generatedAt DateTime  @default(now())
   mergedAt    DateTime?
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  connector SourceConnector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+  @@index([connectorId])
   @@map("guardrail_pushes")
 }
 
@@ -501,8 +503,9 @@ model SourceConnector {
   enabled       Boolean  @default(true)
   createdAt     DateTime @default(now())
 
-  epics  EpicSnapshot[]
-  boards ProjectBoard[]
+  epics           EpicSnapshot[]
+  boards          ProjectBoard[]
+  guardrailPushes GuardrailPush[]
 
   @@map("source_connectors")
 }
