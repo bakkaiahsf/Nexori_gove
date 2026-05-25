@@ -555,8 +555,51 @@ export default async function CaseDetail({ params }: { params: { id: string } })
               )}
             </div>
 
-            {/* Right column: Gates + Waivers + Evidence */}
+            {/* Right column: Savings + Gates + Waivers + Evidence */}
             <div className="col-span-12 lg:col-span-5 space-y-lg">
+              {/* ── Governance Savings ── */}
+              {(gatesSkipped.length > 0 || inheritedApprovals.length > 0) && (
+                <section className="bg-surface border border-primary/30 p-lg">
+                  <div className="flex items-center gap-md mb-md">
+                    <Icon name="trending_down" size={14} className="text-primary" />
+                    <span className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
+                      GOVERNANCE SAVINGS
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-md text-center">
+                    <div>
+                      <p className="font-bold text-primary leading-none" style={{ fontSize: 28 }}>
+                        {gatesSkipped.length + inheritedApprovals.length}
+                      </p>
+                      <p className="font-mono-technical text-[9px] text-on-surface-variant mt-xs">
+                        OVERHEAD REMOVED
+                      </p>
+                    </div>
+                    <div className="border-x border-border-muted">
+                      <p className="font-bold text-on-surface leading-none" style={{ fontSize: 28 }}>
+                        ≈{(gatesSkipped.length + inheritedApprovals.length) * 2}h
+                      </p>
+                      <p className="font-mono-technical text-[9px] text-on-surface-variant mt-xs">
+                        TIME RETURNED
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-on-surface leading-none" style={{ fontSize: 28 }}>
+                        {inheritedApprovals.length}
+                      </p>
+                      <p className="font-mono-technical text-[9px] text-on-surface-variant mt-xs">
+                        REVIEWS INHERITED
+                      </p>
+                    </div>
+                  </div>
+                  {gatesSkipped.length > 0 && (
+                    <p className="font-mono-technical text-[10px] text-primary mt-md border-t border-border-muted pt-md">
+                      AI REMOVED {gatesSkipped.length} NON-APPLICABLE GATE{gatesSkipped.length !== 1 ? "S" : ""} FROM PIPELINE
+                    </p>
+                  )}
+                </section>
+              )}
+
               {/* ── Gate Pipeline ── */}
               <section className="bg-surface border border-border-muted">
                 <div className="px-xl py-md border-b border-border-muted flex items-center justify-between">

@@ -8,9 +8,7 @@ import {
   DEMO_PROJECT_KEY,
 } from "@/lib/governance";
 import { computeDeliveryConfidence } from "@/lib/governance/confidence";
-import HeatmapClient from "@/components/governance/HeatmapClient";
 import StatusBarClient from "@/components/governance/StatusBarClient";
-import ApproveButton from "@/components/governance/ApproveButton";
 import SearchBar from "@/components/governance/SearchBar";
 
 // Server Component — fetches directly from Prisma, no API overhead
@@ -69,16 +67,6 @@ function DeliveryGauge({ score, verdict }: { score: number; verdict: string }) {
   );
 }
 
-function phaseLabel(phase: string): string {
-  const map: Record<string, string> = {
-    "change-delivery": "Change",
-    "ai-deployment": "AI Deploy",
-    "third-party-onboarding": "3rd Party",
-    incident: "Incident",
-  };
-  return map[phase] ?? phase;
-}
-
 export default async function CommandCenter() {
   const session = await getServerSession(authOptions);
   const project = await prisma.project.findUnique({
@@ -104,7 +92,8 @@ export default async function CommandCenter() {
       where: { projectId: project.id, status: "active" },
       select: {
         id: true,
-        riskScore: { select: { compositeScore: true, scoringConfidence: true } },
+        phase: true,
+        riskScore: { select: { compositeScore: true, scoringConfidence: true, intensity: true } },
         adaptivePipeline: { select: { reducedFromBaseline: true } },
       },
     }),
@@ -130,6 +119,19 @@ export default async function CommandCenter() {
   const totalGatesSaved = activeCases.reduce(
     (sum, c) => sum + (c.adaptivePipeline?.reducedFromBaseline ?? 0),
     0
+  );
+
+  const enhancedCount = activeCases.filter(
+    (c) => c.riskScore?.intensity === "enhanced" || c.riskScore?.intensity === "regulated"
+  ).length;
+
+  const casesByPhase = activeCases.reduce<Record<string, number>>((acc, c) => {
+    acc[c.phase] = (acc[c.phase] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const regulatoryReadinessPct = Math.round(
+    (summary.evidenceMapped / Math.max(summary.totalEvidence, 1)) * 100
   );
 
   const confidence = computeDeliveryConfidence({
@@ -277,8 +279,52 @@ export default async function CommandCenter() {
               </div>
             </div>
 
-            {/* Risk Heatmap — Client Island */}
-            <HeatmapClient criticalRisks={summary.criticalRisks} openRisks={summary.openRisks} />
+            {/* Portfolio Overview */}
+            <div className="col-span-12 bg-surface border border-border-muted p-xl">
+              <div className="flex items-center justify-between mb-xl">
+                <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+                  PORTFOLIO OVERVIEW
+                </h3>
+                <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                  {summary.activeCases} ACTIVE CASE{summary.activeCases !== 1 ? "S" : ""}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-lg">
+                {/* Cases by phase */}
+                {Object.entries(casesByPhase).length > 0 ? (
+                  Object.entries(casesByPhase).map(([phase, count]) => (
+                    <div key={phase} className="flex items-center justify-between border border-border-muted p-md">
+                      <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                        {phase.replace(/-/g, " ").toUpperCase()}
+                      </span>
+                      <span className="font-bold text-primary">{count}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-3 font-mono-technical text-[11px] text-on-surface-variant">
+                    No active cases.
+                  </div>
+                )}
+                {/* Risk posture tile */}
+                {enhancedCount > 0 && (
+                  <div className="flex items-center justify-between border border-critical/30 bg-critical/5 p-md">
+                    <span className="font-mono-technical text-[10px] text-critical">
+                      HIGH-RISK CASES
+                    </span>
+                    <span className="font-bold text-critical">{enhancedCount}</span>
+                  </div>
+                )}
+                {/* Regulatory readiness tile */}
+                <div className="flex items-center justify-between border border-border-muted p-md">
+                  <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                    EVIDENCE COVERAGE
+                  </span>
+                  <span className={`font-bold ${regulatoryReadinessPct >= 80 ? "text-primary" : regulatoryReadinessPct >= 60 ? "text-tertiary" : "text-critical"}`}>
+                    {regulatoryReadinessPct}%
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right 4 cols */}
@@ -421,74 +467,25 @@ export default async function CommandCenter() {
             </div>
           </div>
 
-          {/* Approval Pipeline — full width */}
-          <div className="col-span-12">
-            <div className="bg-surface border border-border-muted overflow-hidden">
-              <div className="p-xl border-b border-border-muted flex justify-between items-center">
-                <h3 className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
-                  APPROVAL PIPELINE
-                </h3>
-                <span className="text-primary font-mono-technical text-[11px]">
-                  {approvals.length} QUEUED REQUEST{approvals.length !== 1 ? "S" : ""}
-                </span>
+          {/* Pending approvals summary — compact signal, not operational table */}
+          {approvals.length > 0 && (
+            <div className="col-span-12">
+              <div className="bg-surface border border-tertiary/30 p-lg flex items-center justify-between">
+                <div className="flex items-center gap-md">
+                  <Icon name="pending_actions" size={16} className="text-tertiary" />
+                  <span className="font-mono-technical text-[11px] text-on-surface">
+                    {approvals.length} APPROVAL{approvals.length !== 1 ? "S" : ""} AWAITING ACTION
+                  </span>
+                </div>
+                <a
+                  href="/cases"
+                  className="font-mono-technical text-[10px] text-primary hover:underline"
+                >
+                  REVIEW IN CASES →
+                </a>
               </div>
-              {approvals.length === 0 ? (
-                <div className="p-xl">
-                  <p className="font-mono-technical text-[11px] text-primary">
-                    All approvals complete.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-surface-container-low border-b border-border-muted">
-                      <tr>
-                        {["REQUEST_ID", "GATE", "CASE", "URGENCY", "EXPIRES", "ACTION"].map(
-                          (h, i) => (
-                            <th
-                              key={h}
-                              className={`px-xl py-md font-label-caps text-label-caps text-on-surface-variant ${i === 5 ? "text-right" : ""}`}
-                            >
-                              {h}
-                            </th>
-                          )
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border-muted">
-                      {approvals.map((a) => (
-                        <tr
-                          key={a.id}
-                          className="hover:bg-surface-container-highest transition-colors"
-                        >
-                          <td className="px-xl py-md font-mono-technical text-[12px] text-on-surface-variant">
-                            #{a.id.slice(-6).toUpperCase()}
-                          </td>
-                          <td className="px-xl py-md font-body-base text-body-base text-on-surface">
-                            {a.gate.name}
-                          </td>
-                          <td className="px-xl py-md font-mono-technical text-[11px] text-on-surface-variant">
-                            {phaseLabel(a.gate.case.phase)}
-                          </td>
-                          <td className="px-xl py-md">
-                            <span className="px-2 py-0.5 border border-tertiary/30 text-tertiary font-mono-technical text-[10px]">
-                              PENDING
-                            </span>
-                          </td>
-                          <td className="px-xl py-md font-mono-technical text-[11px] text-on-surface-variant">
-                            {a.expiresAt ? new Date(a.expiresAt).toLocaleDateString() : "—"}
-                          </td>
-                          <td className="px-xl py-md text-right">
-                            <ApproveButton approvalId={a.id} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
