@@ -145,6 +145,46 @@ const EVENT_BADGE: Record<GovernanceEventType, { label: string; cls: string; dot
     cls: "bg-primary/10 text-primary border border-primary",
     dot: "bg-primary border-primary",
   },
+  PROGRAM_CREATED: {
+    label: "PROGRAM",
+    cls: "bg-primary/10 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  PROJECT_ASSIGNED_TO_PROGRAM: {
+    label: "ASSIGNED",
+    cls: "bg-primary/10 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  BOARD_ADDED: {
+    label: "BOARD",
+    cls: "bg-primary/10 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  GUARDRAIL_PUSHED: {
+    label: "GUARDRAIL",
+    cls: "bg-tertiary/20 text-tertiary border border-tertiary",
+    dot: "bg-tertiary border-tertiary",
+  },
+  GUARDRAIL_MERGED: {
+    label: "MERGED",
+    cls: "bg-primary/20 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
+  GUARDRAIL_REJECTED: {
+    label: "REJECTED",
+    cls: "bg-critical text-on-error",
+    dot: "bg-critical border-critical",
+  },
+  EXCEPTION_STORY_CREATED: {
+    label: "EXCEPTION",
+    cls: "bg-tertiary/20 text-tertiary border border-tertiary",
+    dot: "bg-tertiary border-tertiary",
+  },
+  GATE_BUNDLE_APPLIED: {
+    label: "BUNDLE",
+    cls: "bg-primary/10 text-primary border border-primary",
+    dot: "bg-primary border-primary",
+  },
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {

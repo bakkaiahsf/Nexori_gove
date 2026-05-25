@@ -54,6 +54,18 @@ enum GovernanceEventType {
   TRIGGER_MATCHED
   TRIGGER_SKIPPED
   CONNECTOR_EVENT_RECEIVED
+  // Program & board events
+  PROGRAM_CREATED
+  PROJECT_ASSIGNED_TO_PROGRAM
+  BOARD_ADDED
+  // Guardrails
+  GUARDRAIL_PUSHED
+  GUARDRAIL_MERGED
+  GUARDRAIL_REJECTED
+  // Exception dual-tracking
+  EXCEPTION_STORY_CREATED
+  // Gate bundles
+  GATE_BUNDLE_APPLIED
 }
 
 enum TriggerAction {
@@ -133,6 +145,20 @@ model User {
 // PROJECT
 // ─────────────────────────────────────────────
 
+model Program {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  ownerEmail  String?
+  status      String    @default("ACTIVE") // ACTIVE|ARCHIVED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  projects Project[]
+
+  @@map("programs")
+}
+
 model Project {
   id             String   @id @default(cuid())
   key            String   @unique
@@ -143,9 +169,11 @@ model Project {
   ownerEmail     String
   tenantId       String?
   status         String   @default("active") // active|archived|paused
+  programId      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  program            Program?               @relation(fields: [programId], references: [id])
   aiControlSetting   AIControlSetting?
   governanceCases    GovernanceCase[]
   governanceEvents   GovernanceEvent[]
@@ -155,8 +183,61 @@ model Project {
   regulatoryMappings RegulatoryMapping[]
   governanceWaivers  GovernanceWaiver[]
   triggerRules       GovernanceTriggerRule[]
+  boards             ProjectBoard[]
+  guardrailPushes    GuardrailPush[]
 
   @@map("projects")
+}
+
+model ProjectBoard {
+  id          String   @id @default(cuid())
+  projectId   String
+  connectorId String
+  boardId     String   // external board ID in the tool
+  boardName   String
+  boardType   String   @default("scrum") // scrum|kanban
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  connector SourceConnector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, connectorId, boardId])
+  @@map("project_boards")
+}
+
+model GateBundle {
+  id         String   @id @default(cuid())
+  name       String
+  stage      String   // planning|development|pre-prod|deployment
+  gateSlugs  String[]
+  frameworks String[]
+  mandatory  Boolean  @default(false)
+  isBuiltIn  Boolean  @default(false)
+  projectId  String?  // null = global default
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("gate_bundles")
+}
+
+model GuardrailPush {
+  id          String    @id @default(cuid())
+  projectId   String
+  connectorId String
+  framework   String    // GDPR|DORA|SOC2 etc.
+  repoPath    String    // .github/governance/gdpr-rules.yaml
+  prUrl       String?
+  prNumber    Int?
+  status      String    @default("PENDING") // PENDING|MERGED|REJECTED|FAILED
+  rulesHash   String    // SHA256 of generated YAML
+  generatedAt DateTime  @default(now())
+  mergedAt    DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("guardrail_pushes")
 }
 
 // ─────────────────────────────────────────────
@@ -420,7 +501,8 @@ model SourceConnector {
   enabled       Boolean  @default(true)
   createdAt     DateTime @default(now())
 
-  epics EpicSnapshot[]
+  epics  EpicSnapshot[]
+  boards ProjectBoard[]
 
   @@map("source_connectors")
 }

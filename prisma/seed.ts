@@ -190,6 +190,59 @@ async function main() {
   }
   console.log(`  ✓ GateDefinitions: ${builtInGates.length} built-in gates seeded`);
 
+  // ── Built-in Gate Bundles ─────────────────────────────────────────────────
+  const builtInBundles = [
+    {
+      name: "Pre-Production Sign-off",
+      stage: "pre-prod",
+      gateSlugs: ["enterprise-sign-off", "ui-ux-review", "security-penetration-test"],
+      frameworks: ["SOC2", "ISO_27001"],
+      mandatory: true,
+      isBuiltIn: true,
+    },
+    {
+      name: "AI System Deployment",
+      stage: "deployment",
+      gateSlugs: ["ai-risk-assessment", "ai-ethics-review", "human-override-validation"],
+      frameworks: ["EU_AI_ACT"],
+      mandatory: true,
+      isBuiltIn: true,
+    },
+    {
+      name: "Third-Party Onboarding",
+      stage: "planning",
+      gateSlugs: ["vendor-assessment", "dora-article28-check", "contract-review"],
+      frameworks: ["DORA"],
+      mandatory: false,
+      isBuiltIn: true,
+    },
+    {
+      name: "Data Change Sign-off",
+      stage: "development",
+      gateSlugs: ["dpo-review", "data-classification-sign-off", "privacy-by-design-check"],
+      frameworks: ["GDPR"],
+      mandatory: false,
+      isBuiltIn: true,
+    },
+    {
+      name: "Enterprise Architecture Review",
+      stage: "planning",
+      gateSlugs: ["architecture-review", "technical-review", "security-review"],
+      frameworks: [],
+      mandatory: false,
+      isBuiltIn: true,
+    },
+  ];
+  for (const bundle of builtInBundles) {
+    const existing = await prisma.gateBundle.findFirst({
+      where: { name: bundle.name, isBuiltIn: true },
+    });
+    if (!existing) {
+      await prisma.gateBundle.create({ data: bundle });
+    }
+  }
+  console.log(`  ✓ GateBundles: ${builtInBundles.length} built-in bundles seeded`);
+
   // ── Project ──────────────────────────────────────────────────────────────
   const project = await prisma.project.upsert({
     where: { key: "DORA-Q4-25" },
@@ -338,7 +391,7 @@ async function main() {
     },
   });
 
-  const gateLegal = await prisma.governanceGate.create({
+  await prisma.governanceGate.create({
     data: {
       caseId: caseTP.id,
       name: "Legal Sign-off",

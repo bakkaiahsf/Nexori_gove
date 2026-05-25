@@ -162,6 +162,83 @@ export class GitHubConnector implements SourceConnector {
   async updateIssueStatus(_key: string, _status: string): Promise<void> {
     // Status updates on PRs require merge/close operations — not supported generically
   }
+
+  async listBoards(): Promise<Array<{ id: string; name: string; type: string }>> {
+    try {
+      const projects = await this.ghFetch<Array<{ id: number; name: string; body?: string }>>(
+        `/repos/${this.opts.owner}/${this.opts.repo}/projects`
+      );
+      return projects.map((p) => ({ id: String(p.id), name: p.name, type: "kanban" }));
+    } catch {
+      return [];
+    }
+  }
+
+  async createPullRequest(input: {
+    title: string;
+    body: string;
+    filePath: string;
+    fileContent: string;
+    baseBranch: string;
+  }): Promise<{ url?: string; number?: number }> {
+    const { owner, repo } = this.opts;
+    const branchName = `nexori-guardrails-${Date.now()}`;
+
+    // Get base branch SHA
+    const baseRef = await this.ghFetch<{ object: { sha: string } }>(
+      `/repos/${owner}/${repo}/git/ref/heads/${input.baseBranch}`
+    );
+    const baseSha = baseRef.object.sha;
+
+    // Create branch
+    await this.ghFetch(`/repos/${owner}/${repo}/git/refs`, {
+      method: "POST",
+      body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: baseSha }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    // Check if file exists to get its SHA (needed for update)
+    let existingSha: string | undefined;
+    try {
+      const existing = await this.ghFetch<{ sha: string }>(
+        `/repos/${owner}/${repo}/contents/${input.filePath}?ref=${branchName}`
+      );
+      existingSha = existing.sha;
+    } catch {
+      existingSha = undefined;
+    }
+
+    // Create or update file
+    const fileBody: Record<string, string> = {
+      message: `chore(governance): add ${input.filePath}`,
+      content: Buffer.from(input.fileContent).toString("base64"),
+      branch: branchName,
+    };
+    if (existingSha) fileBody.sha = existingSha;
+
+    await this.ghFetch(`/repos/${owner}/${repo}/contents/${input.filePath}`, {
+      method: "PUT",
+      body: JSON.stringify(fileBody),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    // Create PR
+    const pr = await this.ghFetch<{ html_url: string; number: number }>(
+      `/repos/${owner}/${repo}/pulls`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          title: input.title,
+          body: input.body,
+          head: branchName,
+          base: input.baseBranch,
+        }),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    return { url: pr.html_url, number: pr.number };
+  }
 }
 
 export function buildGitHubConnector(token: string, owner: string, repo: string): GitHubConnector {

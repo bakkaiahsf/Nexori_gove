@@ -1,6 +1,7 @@
 import prisma from "@/lib/db";
 import { routeAI } from "@/lib/ai/router";
 import { GovernanceEventType } from "@prisma/client";
+import { getConnector } from "@/lib/connectors";
 
 export type WaiverType = "emergency" | "time-limited" | "risk-accepted" | "expedited-path";
 
@@ -149,6 +150,58 @@ export async function requestGovernanceWaiver(req: WaiverRequest): Promise<Waive
 
     return w;
   });
+
+  // Dual-track exception: create linked story in originating tool
+  if (req.caseId) {
+    try {
+      const govCase = await prisma.governanceCase.findUnique({
+        where: { id: req.caseId },
+        select: { title: true, sourceEpicKey: true, sourceConnectorId: true },
+      });
+      if (govCase?.sourceConnectorId && govCase.sourceEpicKey) {
+        const connRecord = await prisma.sourceConnector.findUnique({
+          where: { id: govCase.sourceConnectorId },
+        });
+        if (connRecord) {
+          const conn = getConnector(connRecord);
+          const exceptionTitle = `[EXCEPTION] ${gate?.name ?? "Gate waiver"} — ${govCase.title}`;
+          const exceptionDesc = [
+            `**Exception requested by:** ${req.requestedBy}`,
+            `**Waiver type:** ${req.waiverType}`,
+            `**Reason:** ${req.reason}`,
+            `**Residual risk:** ${residualRisk}`,
+            "",
+            "**Compensating controls:**",
+            ...compensatingControls.map(
+              (c) => `- ${c.control} (Owner: ${c.owner}${c.dueDate ? `, Due: ${c.dueDate}` : ""})`
+            ),
+            "",
+            `*Tracked in NexoriOS — Waiver ID: ${waiver.id}*`,
+          ].join("\n");
+
+          const exceptionKey = await conn.createStory({
+            epicKey: govCase.sourceEpicKey,
+            title: exceptionTitle,
+            description: exceptionDesc,
+            labels: ["governance-exception", "nexori-waiver"],
+          });
+
+          await prisma.governanceEvent.create({
+            data: {
+              projectId: req.projectId,
+              type: GovernanceEventType.EXCEPTION_STORY_CREATED,
+              resourceType: "governance-waiver",
+              resourceId: waiver.id,
+              payload: { exceptionKey, connectorType: connRecord.type, waiverType: req.waiverType },
+            },
+          });
+        }
+      }
+    } catch (err) {
+      // Non-fatal — exception dual-tracking failure does not block waiver creation
+      console.error("Exception dual-track failed:", err);
+    }
+  }
 
   return {
     waiverId: waiver.id,

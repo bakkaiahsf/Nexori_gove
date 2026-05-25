@@ -172,7 +172,7 @@ export default async function OrchestrationPage() {
           id: g.id,
           name: g.name,
           order: g.order,
-          status: g.status,
+          status: g.status as string,
           skipped: g.skipped,
           skipReason: g.skipReason,
           inheritedFrom: g.inheritedFrom,
@@ -191,7 +191,7 @@ export default async function OrchestrationPage() {
               action: trig.action,
             }
           : null,
-      } satisfies OrchestrationCase;
+      } as OrchestrationCase;
     })
     .filter((c): c is OrchestrationCase => c !== null);
 

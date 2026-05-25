@@ -166,6 +166,79 @@ export class GitLabConnector implements SourceConnector {
   async updateIssueStatus(_key: string, _status: string): Promise<void> {
     // MR state transitions (merge/close) require dedicated endpoints
   }
+
+  async listBoards(): Promise<Array<{ id: string; name: string; type: string }>> {
+    try {
+      const boards = await this.glFetch<Array<{ id: number; name: string }>>(
+        `/projects/${this.encodedProjectId()}/boards`
+      );
+      return boards.map((b) => ({ id: String(b.id), name: b.name, type: "kanban" }));
+    } catch {
+      return [];
+    }
+  }
+
+  async createPullRequest(input: {
+    title: string;
+    body: string;
+    filePath: string;
+    fileContent: string;
+    baseBranch: string;
+  }): Promise<{ url?: string; number?: number }> {
+    const pid = this.encodedProjectId();
+    const branchName = `nexori-guardrails-${Date.now()}`;
+
+    // Get base branch SHA
+    const branch = await this.glFetch<{ commit: { id: string } }>(
+      `/projects/${pid}/repository/branches/${encodeURIComponent(input.baseBranch)}`
+    );
+    const baseSha = branch.commit.id;
+
+    // Create branch
+    await this.glFetch(`/projects/${pid}/repository/branches`, {
+      method: "POST",
+      body: JSON.stringify({ branch: branchName, ref: baseSha }),
+    });
+
+    // Check if file exists
+    let fileExists = false;
+    try {
+      await this.glFetch(
+        `/projects/${pid}/repository/files/${encodeURIComponent(input.filePath)}?ref=${branchName}`
+      );
+      fileExists = true;
+    } catch {
+      fileExists = false;
+    }
+
+    // Create or update file
+    await this.glFetch(`/projects/${pid}/repository/files/${encodeURIComponent(input.filePath)}`, {
+      method: fileExists ? "PUT" : "POST",
+      body: JSON.stringify({
+        branch: branchName,
+        content: input.fileContent,
+        commit_message: `chore(governance): add ${input.filePath}`,
+        encoding: "text",
+      }),
+    });
+
+    // Create MR
+    const mr = await this.glFetch<{ web_url: string; iid: number }>(
+      `/projects/${pid}/merge_requests`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          source_branch: branchName,
+          target_branch: input.baseBranch,
+          title: input.title,
+          description: input.body,
+          remove_source_branch: true,
+        }),
+      }
+    );
+
+    return { url: mr.web_url, number: mr.iid };
+  }
 }
 
 export function buildGitLabConnector(opts: GitLabConnectorOptions): GitLabConnector {
