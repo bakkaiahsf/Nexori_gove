@@ -65,7 +65,7 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
 
   return (
     <>
-      <header className="h-14 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-md">
           <Link
             href="/projects"
@@ -76,35 +76,34 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
             </span>
           </Link>
           <span className="text-border-muted">|</span>
-          <span className="font-mono-technical text-[11px] text-primary">{project.key}</span>
-          <span className="text-border-muted">·</span>
-          <span className="font-mono-technical text-[11px] text-on-surface-variant">
-            {project.name}
-          </span>
-          {project.program && (
-            <>
-              <span className="text-border-muted">·</span>
-              <span className="font-mono-technical text-[10px] text-on-surface-variant">
-                {project.program.name}
-              </span>
-            </>
-          )}
+          <div>
+            <div className="flex items-center gap-md">
+              <span className="font-mono-technical text-[10px] text-primary">{project.key}</span>
+              {project.program && (
+                <span className="font-mono-technical text-[10px] text-on-surface-variant">{project.program.name}</span>
+              )}
+            </div>
+            <h1 className="font-body-bold text-body-bold text-on-surface text-[14px] leading-tight">{project.name}</h1>
+          </div>
         </div>
-        <div className="flex items-center gap-md">
+        <div className="flex items-center gap-sm">
           {pendingChecks > 0 && (
             <span className="px-2 py-0.5 font-mono-technical text-[10px] border border-tertiary text-tertiary">
               {pendingChecks} PENDING
             </span>
           )}
-          <span
-            className={`px-2 py-0.5 font-mono-technical text-[10px] border ${
-              project.status === "active"
-                ? "border-primary text-primary"
-                : "border-border-muted text-on-surface-variant"
-            }`}
+          <Link
+            href={`/release-readiness?projectId=${project.id}`}
+            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
           >
-            {project.status.toUpperCase()}
-          </span>
+            READINESS →
+          </Link>
+          <Link
+            href={`/cases?projectId=${project.id}`}
+            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+          >
+            ITEMS →
+          </Link>
         </div>
       </header>
 
