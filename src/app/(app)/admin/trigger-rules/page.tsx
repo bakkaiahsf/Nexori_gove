@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import Link from "next/link";
 import { TriggerAction } from "@prisma/client";
 import TriggerRulesClient from "./TriggerRulesClient";
 
@@ -62,21 +63,31 @@ export default async function TriggerRulesPage({
 
   return (
     <>
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">
-            Monitoring Rules
-          </h1>
-          <span className="font-body-base text-body-base text-on-surface-variant text-[12px]">
-            Configure which tool events trigger automatic monitoring actions — per project
-          </span>
-        </div>
-        <div className="flex items-center gap-md font-mono-technical text-[10px]">
-          <span className="text-primary">{rules.filter((r) => r.enabled).length} ACTIVE</span>
-          <span className="text-on-surface-variant">·</span>
-          <span className="text-tertiary">{matchedCount} MATCHED</span>
-          <span className="text-on-surface-variant">·</span>
-          <span className="text-on-surface-variant">{skippedCount} SKIPPED</span>
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href={`/projects/${activeProject.id}`} className="text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                <Link href={`/projects/${activeProject.id}`} className="hover:text-primary transition-colors">{activeProject.name}</Link>
+                {" "}→ Monitoring Rules
+              </p>
+              <p className="font-mono-technical text-[11px] text-on-surface">
+                {rules.filter((r) => r.enabled).length} active · {matchedCount} matched · {skippedCount} skipped
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-md font-mono-technical text-[10px]">
+            <Link
+              href={`/projects/${activeProject.id}`}
+              className="px-md py-xs border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+            >
+              PROJECT HUB →
+            </Link>
+          </div>
         </div>
       </header>
 
