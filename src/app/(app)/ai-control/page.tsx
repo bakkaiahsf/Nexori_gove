@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import Link from "next/link";
 import {
   getAIControlSetting,
   getPendingApprovals,
@@ -111,18 +112,32 @@ export default async function AIControl({
   return (
     <>
       {/* ── Top Bar ── */}
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <h1 className="font-headline-md text-headline-md text-on-surface">{project.name} — AI Control</h1>
-        <div className="flex items-center gap-md">
-          {isEmergencyLocked ? (
-            <span className="px-2 py-1 bg-critical text-on-error font-mono-technical text-[10px] animate-pulse">
-              EMERGENCY LOCK — AI DISABLED
-            </span>
-          ) : (
-            <span className="px-2 py-1 bg-primary/10 border border-primary text-primary font-mono-technical text-[10px]">
-              MODE: {currentMode.replace(/_/g, " ")}
-            </span>
-          )}
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href={`/projects/${project.id}`} className="text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                <Link href={`/projects/${project.id}`} className="hover:text-primary transition-colors">{project.name}</Link>
+                {" "}→ Intelligence Controls
+              </p>
+              <h1 className="font-body-bold text-[14px] text-on-surface leading-tight">{project.name} — AI Control</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-md">
+            {isEmergencyLocked ? (
+              <span className="px-2 py-1 bg-critical text-on-error font-mono-technical text-[10px] animate-pulse">
+                EMERGENCY LOCK — AI DISABLED
+              </span>
+            ) : (
+              <span className="px-2 py-1 bg-primary/10 border border-primary text-primary font-mono-technical text-[10px]">
+                MODE: {currentMode.replace(/_/g, " ")}
+              </span>
+            )}
+          </div>
         </div>
       </header>
 

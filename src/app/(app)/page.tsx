@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
+import Link from "next/link";
 import {
   getProjectSummary,
   getPendingApprovals,
@@ -73,8 +74,8 @@ export default async function CommandCenter({
 }) {
   const session = await getServerSession(authOptions);
   const project = searchParams.projectId
-    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true } })
-    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true } });
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, name: true, key: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, key: true } });
 
   if (!project) {
     return (
@@ -161,7 +162,13 @@ export default async function CommandCenter({
           <SearchBar />
         </div>
         <div className="flex items-center gap-lg">
-          <div className="flex gap-md border-r border-border-muted pr-lg">
+          <div className="flex gap-md border-r border-border-muted pr-lg items-center">
+            <Link
+              href={`/projects/${project.id}`}
+              className="font-mono-technical text-[10px] text-on-surface-variant hover:text-primary transition-colors border border-border-muted px-2 py-0.5"
+            >
+              {project.key} →
+            </Link>
             {summary.pendingApprovals > 0 && (
               <span className="flex items-center gap-xs px-2 py-0.5 bg-tertiary/20 text-tertiary border border-tertiary font-mono-technical text-[10px]">
                 {summary.pendingApprovals} PENDING
