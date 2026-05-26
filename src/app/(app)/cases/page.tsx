@@ -84,21 +84,30 @@ export default async function Cases({
 
   return (
     <>
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Assurance Items</h1>
-          <span className="font-body-base text-body-base text-on-surface-variant">
-            {activeCases} active · {totalCases} total
-          </span>
-        </div>
-        <div className="flex items-center gap-lg">
-          <div className="text-right">
-            <p className="font-mono-technical text-[10px] text-on-surface-variant">READINESS</p>
-            <p className="font-body-bold text-body-bold text-primary">
-              {approvedGates}/{totalGates} CLEARED
-            </p>
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href={`/projects/${project.id}`} className="text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                <Link href={`/projects/${project.id}`} className="hover:text-primary transition-colors">{project.name}</Link>
+                {" "}→ Assurance Items
+              </p>
+              <p className="font-mono-technical text-[11px] text-on-surface">{activeCases} active · {totalCases} total · {approvedGates}/{totalGates} checks cleared</p>
+            </div>
           </div>
-          <NewCaseButton />
+          <div className="flex items-center gap-md">
+            <Link
+              href={`/release-readiness?projectId=${project.id}`}
+              className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+            >
+              READINESS →
+            </Link>
+            <NewCaseButton />
+          </div>
         </div>
       </header>
 

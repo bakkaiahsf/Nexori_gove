@@ -151,20 +151,28 @@ export default async function ReleaseReadinessPage({
 
   return (
     <>
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Release Readiness</h1>
-          <span className="font-body-base text-body-base text-on-surface-variant">
-            {project.name}
-          </span>
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href={`/projects/${project.id}`} className="text-on-surface-variant hover:text-primary transition-colors">
+              <Icon name="arrow_back" size={18} className="text-on-surface-variant" />
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                <Link href={`/projects/${project.id}`} className="hover:text-primary transition-colors">{project.name}</Link>
+                {" "}→ Release Readiness
+              </p>
+              <h1 className="font-body-bold text-[14px] text-on-surface leading-tight">{project.name} — Readiness Report</h1>
+            </div>
+          </div>
+          <Link
+            href={`/cases?projectId=${project.id}`}
+            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+          >
+            ASSURANCE ITEMS →
+          </Link>
         </div>
-        <Link
-          href="/orchestration"
-          className="flex items-center gap-sm font-mono-technical text-[10px] text-primary hover:underline"
-        >
-          <Icon name="account_tree" size={14} className="text-primary" />
-          ORCHESTRATION VIEW →
-        </Link>
       </header>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">

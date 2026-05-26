@@ -15,7 +15,7 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
   });
   if (!project) notFound();
 
-  const [boards, activeCases, allCases, aiSetting, triggerRules, recentEvents, guardrailPushes] =
+  const [boards, activeCases, allCases, aiSetting, triggerRules, recentEvents, guardrailPushes, evidenceItems] =
     await Promise.all([
       prisma.projectBoard.findMany({
         where: { projectId: params.id },
@@ -53,9 +53,30 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
           select: { id: true, framework: true, status: true, prUrl: true, generatedAt: true },
         })
         .catch(() => []),
+      prisma.evidenceItem.findMany({
+        where: { projectId: params.id },
+        select: {
+          id: true,
+          caseId: true,
+          submittedAt: true,
+          regulatoryMappings: { select: { framework: true } },
+        },
+      }).catch(() => [] as Array<{ id: string; caseId: string | null; submittedAt: Date; regulatoryMappings: Array<{ framework: string }> }>),
     ]);
 
   const frameworks = [...new Set(project.regulatoryMappings.map((m) => String(m.framework)))];
+
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const staleEvidence = evidenceItems.filter((e) => e.submittedAt < ninetyDaysAgo).length;
+  const evidenceByFramework: Record<string, number> = {};
+  for (const item of evidenceItems) {
+    for (const m of item.regulatoryMappings) {
+      const key = String(m.framework);
+      evidenceByFramework[key] = (evidenceByFramework[key] ?? 0) + 1;
+    }
+  }
+  const caseIdsWithEvidence = new Set(evidenceItems.map((e) => e.caseId).filter(Boolean));
+  const casesWithoutEvidence = activeCases.filter((c) => !caseIdsWithEvidence.has(c.id)).length;
 
   const pendingChecks = activeCases.reduce(
     (acc, c) =>
@@ -143,6 +164,7 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
           boardName: b.boardName,
           boardType: b.boardType,
           enabled: b.enabled,
+          createdAt: b.createdAt.toISOString(),
           connector: {
             id: b.connector.id,
             type: b.connector.type,
@@ -195,6 +217,12 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
           timestamp: e.timestamp.toISOString(),
           resourceType: e.resourceType,
         }))}
+        evidenceSummary={{
+          total: evidenceItems.length,
+          stale: staleEvidence,
+          byFramework: evidenceByFramework,
+          casesWithoutEvidence,
+        }}
         guardrailPushes={guardrailPushes.map((g) => ({
           id: g.id,
           framework: g.framework,

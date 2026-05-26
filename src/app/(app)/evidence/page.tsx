@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import Link from "next/link";
 import EvidenceClient from "@/components/governance/EvidenceClient";
 import type { EvidenceItemData } from "@/components/governance/EvidenceClient";
 
@@ -12,12 +13,12 @@ export default async function Evidence({
   const project = searchParams.projectId
     ? await prisma.project.findUnique({
         where: { id: searchParams.projectId },
-        select: { id: true, key: true },
+        select: { id: true, key: true, name: true },
       })
     : await prisma.project.findFirst({
         where: { status: "active" },
         orderBy: { createdAt: "asc" },
-        select: { id: true, key: true },
+        select: { id: true, key: true, name: true },
       });
 
   if (!project) {
@@ -78,20 +79,29 @@ export default async function Evidence({
 
   return (
     <>
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Evidence Vault</h1>
-          <span className="font-body-base text-body-base text-on-surface-variant">
-            Immutable · Append-Only · SHA-256 Hashed
-          </span>
-        </div>
-        <div className="flex items-center gap-lg">
-          <div className="text-right">
-            <p className="font-mono-technical text-[10px] text-on-surface-variant">COVERAGE</p>
-            <p className="font-body-bold text-body-bold text-primary">
-              {totalMapped}/{items.length} MAPPED · {verified} VERIFIED
-            </p>
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href={`/projects/${project.id}`} className="text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                <Link href={`/projects/${project.id}`} className="hover:text-primary transition-colors">{project.name}</Link>
+                {" "}→ Evidence Hub
+              </p>
+              <p className="font-mono-technical text-[11px] text-on-surface">
+                {items.length} items · {totalMapped}/{items.length} mapped · {verified} verified
+              </p>
+            </div>
           </div>
+          <Link
+            href={`/cases?projectId=${project.id}`}
+            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+          >
+            ASSURANCE ITEMS →
+          </Link>
         </div>
       </header>
 

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import prisma from "@/lib/db";
+import Link from "next/link";
 import { GovernanceEventType } from "@prisma/client";
 import TimelineFilterBar from "@/components/governance/TimelineFilterBar";
 
@@ -302,8 +303,8 @@ export default async function Timeline({
   searchParams: { projectId?: string; type?: string; from?: string; to?: string };
 }) {
   const project = searchParams.projectId
-    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, key: true } })
-    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, key: true } });
+    ? await prisma.project.findUnique({ where: { id: searchParams.projectId }, select: { id: true, key: true, name: true } })
+    : await prisma.project.findFirst({ where: { status: "active" }, orderBy: { createdAt: "asc" }, select: { id: true, key: true, name: true } });
 
   if (!project) {
     return (
@@ -369,23 +370,29 @@ export default async function Timeline({
   return (
     <>
       {/* ── Top Bar ── */}
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Flight Recorder</h1>
-          <span className="text-on-surface-variant font-body-base text-body-base">
-            Evidence Vault · Append-Only
-          </span>
-        </div>
-        <div className="flex items-center gap-lg">
-          <div className="text-right">
-            <p className="font-mono-technical text-[10px] text-on-surface-variant">EVENTS LOGGED</p>
-            <p className="font-body-bold text-body-bold text-primary">
-              {String(events.length).padStart(3, "0")} IMMUTABLE
-            </p>
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href={`/projects/${project.id}`} className="text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                <Link href={`/projects/${project.id}`} className="hover:text-primary transition-colors">{project.name}</Link>
+                {" "}→ Flight Recorder
+              </p>
+              <p className="font-mono-technical text-[11px] text-on-surface">
+                {String(events.length).padStart(3, "0")} IMMUTABLE EVENTS · {project.key}
+              </p>
+            </div>
           </div>
-          <div className="font-mono-technical text-[10px] text-on-surface-variant border border-border-muted px-2 py-1">
-            {project.key}
-          </div>
+          <Link
+            href={`/projects/${project.id}`}
+            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+          >
+            PROJECT HUB →
+          </Link>
         </div>
       </header>
 

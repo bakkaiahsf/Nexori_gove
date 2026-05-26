@@ -9,6 +9,7 @@ type Board = {
   boardName: string;
   boardType: string;
   enabled: boolean;
+  createdAt: string;
   connector: { id: string; type: string; name: string; baseUrl: string };
 };
 
@@ -57,6 +58,13 @@ type GuardrailPush = {
   generatedAt: string;
 };
 
+type EvidenceSummary = {
+  total: number;
+  stale: number;
+  byFramework: Record<string, number>;
+  casesWithoutEvidence: number;
+};
+
 interface Props {
   projectId: string;
   projectKey: string;
@@ -70,6 +78,7 @@ interface Props {
   triggerRules: TriggerRule[];
   recentEvents: RecentEvent[];
   guardrailPushes: GuardrailPush[];
+  evidenceSummary: EvidenceSummary;
 }
 
 function Icon({ name, size = 16, className = "" }: { name: string; size?: number; className?: string }) {
@@ -145,6 +154,7 @@ export default function ProjectHubClient({
   triggerRules,
   recentEvents,
   guardrailPushes,
+  evidenceSummary,
 }: Props) {
   const [syncingBoard, setSyncingBoard] = useState<string | null>(null);
   const [summaryType, setSummaryType] = useState("sprint");
@@ -421,8 +431,11 @@ export default function ProjectHubClient({
                         {SOURCE_ICON[b.connector.type] ?? b.connector.type.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-body-bold text-[12px] text-on-surface">{b.connector.name}</p>
-                        <p className="font-mono-technical text-[9px] text-on-surface-variant truncate max-w-[180px]">{b.boardId}</p>
+                        <p className="font-body-bold text-[12px] text-on-surface">{b.boardName || b.boardId}</p>
+                        <p className="font-mono-technical text-[9px] text-on-surface-variant">{b.connector.name} · {b.boardType}</p>
+                        <p className="font-mono-technical text-[9px] text-on-surface-variant">
+                          Connected {new Date(b.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
                       </div>
                     </div>
                     <span className={`font-mono-technical text-[9px] border px-1.5 py-0.5 ${b.enabled ? "text-primary border-primary" : "text-on-surface-variant border-border-muted"}`}>
@@ -505,26 +518,80 @@ export default function ProjectHubClient({
 
         {/* ── F. Evidence & Frameworks ─────────────────────────────────── */}
         <section className="bg-surface border border-border-muted">
-          <SectionHeader label="EVIDENCE & FRAMEWORKS" sub={`${frameworks.length} FRAMEWORK${frameworks.length !== 1 ? "S" : ""}`} />
-          <div className="p-lg space-y-md">
-            {frameworks.length > 0 ? (
-              <div className="flex flex-wrap gap-xs">
-                {frameworks.map((f) => (
-                  <span key={f} className="px-2 py-1 font-mono-technical text-[10px] border border-primary/40 text-primary">
-                    {f.replace(/_/g, " ")}
-                  </span>
-                ))}
+          <SectionHeader
+            label="EVIDENCE & FRAMEWORKS"
+            sub={`${evidenceSummary.total} ITEM${evidenceSummary.total !== 1 ? "S" : ""} · ${frameworks.length} FRAMEWORK${frameworks.length !== 1 ? "S" : ""}`}
+          />
+          <div className="divide-y divide-border-muted">
+            {/* Warnings row */}
+            {(evidenceSummary.stale > 0 || evidenceSummary.casesWithoutEvidence > 0) && (
+              <div className="px-lg py-md space-y-xs">
+                {evidenceSummary.stale > 0 && (
+                  <div className="flex items-center gap-md">
+                    <Icon name="schedule" size={13} className="text-tertiary shrink-0" />
+                    <p className="font-mono-technical text-[10px] text-tertiary">
+                      {evidenceSummary.stale} evidence item{evidenceSummary.stale !== 1 ? "s" : ""} older than 90 days — may need refresh
+                    </p>
+                  </div>
+                )}
+                {evidenceSummary.casesWithoutEvidence > 0 && (
+                  <div className="flex items-center gap-md">
+                    <Icon name="warning" size={13} className="text-critical shrink-0" />
+                    <p className="font-mono-technical text-[10px] text-critical">
+                      {evidenceSummary.casesWithoutEvidence} active item{evidenceSummary.casesWithoutEvidence !== 1 ? "s" : ""} with no evidence linked
+                    </p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="font-mono-technical text-[11px] text-on-surface-variant">No regulatory frameworks mapped yet.</p>
             )}
-            <Link
-              href={`/evidence?projectId=${projectId}`}
-              className="inline-flex items-center gap-sm font-mono-technical text-[10px] text-primary hover:underline"
-            >
-              <Icon name="inventory_2" size={12} className="text-primary" />
-              OPEN EVIDENCE HUB →
-            </Link>
+
+            {/* Per-framework breakdown */}
+            {frameworks.length > 0 && (
+              <div className="px-lg py-md">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-sm">
+                  {frameworks.map((f) => {
+                    const count = evidenceSummary.byFramework[f] ?? 0;
+                    return (
+                      <div key={f} className="flex items-center justify-between border border-border-muted px-md py-sm">
+                        <span className="font-mono-technical text-[10px] text-primary">{f.replace(/_/g, " ")}</span>
+                        <span className={`font-mono-technical text-[10px] font-bold ${count === 0 ? "text-critical" : "text-on-surface"}`}>
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {evidenceSummary.total === 0 && (
+                  <p className="font-mono-technical text-[10px] text-on-surface-variant mt-md">
+                    No evidence submitted yet. Upload your first item to start building the audit pack.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {frameworks.length === 0 && (
+              <div className="px-lg py-md">
+                <p className="font-mono-technical text-[11px] text-on-surface-variant">No regulatory frameworks mapped yet.</p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="px-lg py-md flex gap-md">
+              <Link
+                href={`/evidence?projectId=${projectId}`}
+                className="px-md py-xs border border-primary text-primary font-mono-technical text-[10px] hover:bg-primary/10 transition-colors"
+              >
+                EVIDENCE HUB →
+              </Link>
+              {evidenceSummary.casesWithoutEvidence > 0 && (
+                <Link
+                  href={`/evidence?projectId=${projectId}&filter=missing`}
+                  className="px-md py-xs border border-critical text-critical font-mono-technical text-[10px] hover:bg-critical/10 transition-colors"
+                >
+                  VIEW MISSING →
+                </Link>
+              )}
+            </div>
           </div>
         </section>
 
