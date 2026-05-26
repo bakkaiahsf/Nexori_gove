@@ -306,10 +306,11 @@ interface Props {
   projectId: string;
   items: EvidenceItemData[];
   cases: { id: string; title: string }[];
+  initialTab?: Tab;
 }
 
-export default function EvidenceClient({ projectId, items, cases }: Props) {
-  const [tab, setTab] = useState<Tab>("all");
+export default function EvidenceClient({ projectId, items, cases, initialTab }: Props) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? "all");
   const [showSubmit, setShowSubmit] = useState(false);
 
   const now = Date.now();

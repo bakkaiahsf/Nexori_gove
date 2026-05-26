@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function Evidence({
   searchParams,
 }: {
-  searchParams: { projectId?: string };
+  searchParams: { projectId?: string; filter?: string };
 }) {
   const project = searchParams.projectId
     ? await prisma.project.findUnique({
@@ -134,6 +134,7 @@ export default async function Evidence({
         projectId={project.id}
         items={serialisedItems}
         cases={cases}
+        initialTab={searchParams.filter === "missing" || searchParams.filter === "stale" ? "stale" : "all"}
       />
 
       <footer className="h-8 bg-surface-container-low border-t border-border-muted flex items-center justify-between px-xl font-mono-technical text-[10px] text-on-surface-variant shrink-0">

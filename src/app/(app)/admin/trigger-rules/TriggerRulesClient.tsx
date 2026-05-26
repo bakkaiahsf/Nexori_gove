@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TriggerAction } from "@prisma/client";
 
 function Icon({
@@ -166,9 +166,61 @@ export default function TriggerRulesClient({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [tab, setTab] = useState<"rules" | "log">("rules");
+  const [sourceRefs, setSourceRefs] = useState<Array<{ value: string; label: string }>>([]);
+  const [loadingRefs, setLoadingRefs] = useState(false);
+  const lastFetchKey = useRef("");
 
   const availableEventTypes = EVENT_TYPES[form.source] ?? [];
   const availableFields = CONDITION_FIELDS[form.source] ?? [];
+
+  useEffect(() => {
+    if (!form.connectorId) {
+      setSourceRefs([]);
+      return;
+    }
+    const fetchKey = `${form.source}:${form.connectorId}`;
+    if (lastFetchKey.current === fetchKey) return;
+    lastFetchKey.current = fetchKey;
+    setLoadingRefs(true);
+    setSourceRefs([]);
+
+    const url =
+      form.source === "jira"
+        ? `/api/integrations/jira/boards?connectorId=${form.connectorId}`
+        : form.source === "github"
+          ? `/api/integrations/github/repos?connectorId=${form.connectorId}`
+          : `/api/integrations/gitlab/projects?connectorId=${form.connectorId}`;
+
+    fetch(url)
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const d = data as Record<string, unknown>;
+        let refs: Array<{ value: string; label: string }> = [];
+        if (form.source === "jira" && Array.isArray(d.boards)) {
+          const boards = d.boards as Array<{ projectKey?: string; projectName?: string; name: string }>;
+          const seen = new Set<string>();
+          for (const b of boards) {
+            if (b.projectKey && !seen.has(b.projectKey)) {
+              seen.add(b.projectKey);
+              refs.push({ value: b.projectKey, label: `${b.projectKey} — ${b.projectName ?? b.name}` });
+            }
+          }
+        } else if (form.source === "github" && Array.isArray(d.repos)) {
+          refs = (d.repos as Array<{ fullName: string; name: string }>).map((r) => ({
+            value: r.fullName,
+            label: r.fullName,
+          }));
+        } else if (form.source === "gitlab" && Array.isArray(d.projects)) {
+          refs = (d.projects as Array<{ pathWithNamespace: string; name: string }>).map((p) => ({
+            value: p.pathWithNamespace,
+            label: p.pathWithNamespace,
+          }));
+        }
+        setSourceRefs(refs);
+      })
+      .catch(() => setSourceRefs([]))
+      .finally(() => setLoadingRefs(false));
+  }, [form.connectorId, form.source]);
 
   function addCondition() {
     const firstField = availableFields[0]?.field ?? "";
@@ -359,15 +411,18 @@ export default function TriggerRulesClient({
                 </label>
                 <select
                   value={form.source}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    lastFetchKey.current = "";
+                    setSourceRefs([]);
                     setForm((f) => ({
                       ...f,
                       source: e.target.value,
                       eventType: EVENT_TYPES[e.target.value]?.[0] ?? "",
                       conditions: [],
                       connectorId: connectors.find((c) => c.type === e.target.value)?.id ?? "",
-                    }))
-                  }
+                      sourceProjectRef: "",
+                    }));
+                  }}
                   className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
                 >
                   {["jira", "github", "gitlab"].map((s) => (
@@ -403,7 +458,11 @@ export default function TriggerRulesClient({
                 </label>
                 <select
                   value={form.connectorId}
-                  onChange={(e) => setForm((f) => ({ ...f, connectorId: e.target.value }))}
+                  onChange={(e) => {
+                    lastFetchKey.current = "";
+                    setSourceRefs([]);
+                    setForm((f) => ({ ...f, connectorId: e.target.value, sourceProjectRef: "" }));
+                  }}
                   className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
                 >
                   <option value="">— any connector —</option>
@@ -418,21 +477,35 @@ export default function TriggerRulesClient({
               </div>
               <div>
                 <label className="font-mono-technical text-[10px] text-on-surface-variant block mb-sm">
-                  SOURCE PROJECT / REPO REF
-                  <span className="ml-1 opacity-60">(optional scope)</span>
+                  SOURCE PROJECT / REPO
+                  {loadingRefs && <span className="ml-2 opacity-60">LOADING...</span>}
+                  {!form.connectorId && <span className="ml-1 opacity-60">(select connector first)</span>}
                 </label>
-                <input
-                  value={form.sourceProjectRef}
-                  onChange={(e) => setForm((f) => ({ ...f, sourceProjectRef: e.target.value }))}
-                  placeholder={
-                    form.source === "jira"
-                      ? "e.g. BANK, PAYM (Jira project key)"
-                      : form.source === "github"
-                        ? "e.g. org/repo-name"
-                        : "e.g. group/project-path"
-                  }
-                  className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
-                />
+                {sourceRefs.length > 0 ? (
+                  <select
+                    value={form.sourceProjectRef}
+                    onChange={(e) => setForm((f) => ({ ...f, sourceProjectRef: e.target.value }))}
+                    className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
+                  >
+                    <option value="">— all projects (no filter) —</option>
+                    {sourceRefs.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={form.sourceProjectRef}
+                    onChange={(e) => setForm((f) => ({ ...f, sourceProjectRef: e.target.value }))}
+                    placeholder={
+                      form.source === "jira"
+                        ? "e.g. BANK (Jira project key)"
+                        : form.source === "github"
+                          ? "e.g. org/repo-name"
+                          : "e.g. group/project-path"
+                    }
+                    className="w-full bg-surface-container-low border border-border-muted px-md py-sm font-mono-technical text-[12px] text-on-surface outline-none focus:border-primary"
+                  />
+                )}
               </div>
             </div>
 
