@@ -17,33 +17,46 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <header className="h-14 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-md">
-          <span className="font-mono-technical text-[11px] text-on-surface-variant tracking-widest">PROJECT HUB</span>
+          <h1 className="font-headline-md text-headline-md text-on-surface">Projects</h1>
           <span className="text-border-muted">·</span>
-          <span className="font-mono-technical text-[11px] text-primary">{projects.length} PROJECTS</span>
+          <span className="font-mono-technical text-[11px] text-on-surface-variant">{projects.length} active</span>
         </div>
-        <Link
-          href="/admin/projects"
-          className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
-        >
-          MANAGE PROJECTS →
-        </Link>
+        <div className="flex items-center gap-sm">
+          <Link
+            href="/admin/projects"
+            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+          >
+            MANAGE →
+          </Link>
+          <Link
+            href="/projects/start"
+            className="px-lg py-xs bg-primary text-on-primary font-mono-technical text-[10px] hover:brightness-110 transition-all tracking-widest"
+          >
+            + START OR LINK PROJECT
+          </Link>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-xl">
         <div className="max-w-[1400px] mx-auto">
           {projects.length === 0 ? (
-            <div className="border border-border-muted p-xl text-center space-y-md">
-              <p className="font-mono-technical text-[12px] text-on-surface-variant">No projects configured.</p>
-              <p className="font-mono-technical text-[10px] text-on-surface-variant">
-                Connect a source and onboard your first project via Admin Console.
-              </p>
+            <div className="border border-border-muted p-2xl text-center space-y-lg max-w-[520px] mx-auto mt-2xl">
+              <div className="w-16 h-16 bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto">
+                <span className="material-symbols-outlined text-primary" style={{ fontSize: 32, fontVariationSettings: "'FILL' 1" }}>folder_special</span>
+              </div>
+              <div>
+                <p className="font-body-bold text-body-bold text-on-surface text-[15px] mb-sm">No projects yet</p>
+                <p className="font-mono-technical text-[11px] text-on-surface-variant">
+                  Connect your first project in one guided flow. NexoriOS monitors delivery, highlights risk, and creates required actions automatically.
+                </p>
+              </div>
               <Link
-                href="/admin/connectors"
-                className="inline-block mt-md px-lg py-sm border border-primary text-primary font-mono-technical text-[10px] hover:bg-primary/10 transition-colors"
+                href="/projects/start"
+                className="inline-block px-xl py-md bg-primary text-on-primary font-mono-technical text-[11px] hover:brightness-110 transition-all tracking-widest"
               >
-                CONNECT SOURCES →
+                START OR LINK PROJECT →
               </Link>
             </div>
           ) : (

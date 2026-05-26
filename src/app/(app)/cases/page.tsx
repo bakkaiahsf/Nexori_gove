@@ -86,16 +86,16 @@ export default async function Cases({
     <>
       <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-xl">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Governance Cases</h1>
+          <h1 className="font-headline-md text-headline-md text-on-surface">Assurance Items</h1>
           <span className="font-body-base text-body-base text-on-surface-variant">
             {activeCases} active · {totalCases} total
           </span>
         </div>
         <div className="flex items-center gap-lg">
           <div className="text-right">
-            <p className="font-mono-technical text-[10px] text-on-surface-variant">GATES</p>
+            <p className="font-mono-technical text-[10px] text-on-surface-variant">READINESS</p>
             <p className="font-body-bold text-body-bold text-primary">
-              {approvedGates}/{totalGates} APPROVED
+              {approvedGates}/{totalGates} CLEARED
             </p>
           </div>
           <NewCaseButton />
@@ -192,7 +192,7 @@ export default async function Cases({
                   <div className="p-xl">
                     <div className="flex items-center justify-between mb-md">
                       <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest">
-                        GATE PIPELINE
+                        READINESS CHECKS
                       </p>
                       <div className="flex gap-md font-mono-technical text-[10px]">
                         {approved > 0 && <span className="text-primary">{approved} APPROVED</span>}
@@ -247,7 +247,7 @@ export default async function Cases({
             <span>CASE_ENGINE: ACTIVE</span>
           </div>
           <span>
-            TOTAL: {totalCases} CASES · {approvedGates}/{totalGates} GATES CLEARED
+            TOTAL: {totalCases} ITEMS · {approvedGates}/{totalGates} CHECKS CLEARED
           </span>
         </div>
         <Link href="/timeline" className="text-primary hover:underline">

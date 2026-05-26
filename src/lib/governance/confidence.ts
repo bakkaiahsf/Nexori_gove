@@ -43,9 +43,9 @@ export function computeDeliveryConfidence(input: ConfidenceInput): ConfidenceRes
   else verdict = "CONDITIONAL";
 
   const verdictMeta: Record<ConfidenceResult["verdict"], { label: string; cls: string }> = {
-    READY: { label: "DELIVERY READY", cls: "text-primary border-primary" },
-    CONDITIONAL: { label: "CONDITIONAL", cls: "text-tertiary border-tertiary" },
-    BLOCKED: { label: "BLOCKED", cls: "text-critical border-critical" },
+    READY: { label: "Ready to Release", cls: "text-primary border-primary" },
+    CONDITIONAL: { label: "Needs Attention", cls: "text-tertiary border-tertiary" },
+    BLOCKED: { label: "Blocked", cls: "text-critical border-critical" },
   };
 
   const drivers: ConfidenceResult["drivers"] = [

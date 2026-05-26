@@ -49,19 +49,19 @@ const STATUS_CONFIG: Record<
   { label: string; icon: string; cls: string; bg: string }
 > = {
   GO: {
-    label: "GO",
+    label: "Ready to Release",
     icon: "check_circle",
     cls: "text-primary border-primary",
     bg: "bg-primary/10",
   },
   NO_GO: {
-    label: "NO GO",
+    label: "Blocked",
     icon: "cancel",
     cls: "text-critical border-critical",
     bg: "bg-critical/10",
   },
   CONDITIONAL: {
-    label: "CONDITIONAL",
+    label: "Needs Attention",
     icon: "warning",
     cls: "text-tertiary border-tertiary",
     bg: "bg-tertiary/10",

@@ -9,7 +9,8 @@ import { canEmergencyLock } from "@/lib/auth";
 const DELIVERY_ITEMS = [
   { href: "/", icon: "dashboard", label: "Dashboard" },
   { href: "/projects", icon: "folder_special", label: "Projects" },
-  { href: "/cases", icon: "folder_open", label: "Cases" },
+  { href: "/projects/start", icon: "add_circle", label: "Start or Link Project" },
+  { href: "/cases", icon: "folder_open", label: "Assurance Items" },
   { href: "/release-readiness", icon: "rocket_launch", label: "Release Readiness" },
 ];
 
@@ -24,7 +25,7 @@ const ADMIN_ITEMS = [
   { href: "/admin/programs", icon: "account_tree", label: "Programs" },
   { href: "/admin/projects", icon: "folder_special", label: "Projects & Sources" },
   { href: "/admin/connectors", icon: "hub", label: "Connectors" },
-  { href: "/admin/trigger-rules", icon: "rule", label: "Trigger Rules" },
+  { href: "/admin/trigger-rules", icon: "rule", label: "Monitoring Rules" },
   { href: "/orchestration", icon: "account_tree", label: "Orchestration" },
   { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
   { href: "/admin/policy", icon: "description", label: "Policy & Frameworks" },
