@@ -23,17 +23,38 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const creds = connector.credentials as Record<string, string>;
-  const token = creds.token ?? "";
+  const token = creds.token ?? creds.apiToken ?? creds.accessToken ?? "";
 
   if (!token) {
-    return NextResponse.json({ error: "No token configured on connector" }, { status: 400 });
+    return NextResponse.json({
+      error: "No personal access token configured for this GitLab connector.",
+      detail: "Go to Admin → Connectors → edit this connector and add a GitLab personal access token with 'read_api' scope.",
+    }, { status: 400 });
   }
 
+  const baseUrl = connector.baseUrl?.replace(/\/$/, "") || "https://gitlab.com";
+
   try {
-    const glConn = new GitLabConnector({ token, baseUrl: connector.baseUrl, projectId: "" });
+    const glConn = new GitLabConnector({ token, baseUrl, projectId: "" });
     const projects = await glConn.listProjects();
     return NextResponse.json({ projects });
   } catch (err) {
-    return NextResponse.json({ error: "GitLab API error", detail: String(err) }, { status: 502 });
+    const msg = String(err);
+    if (msg.includes("401")) {
+      return NextResponse.json({
+        error: "GitLab authentication failed — token is invalid or expired.",
+        detail: "Update the personal access token in Admin → Connectors.",
+      }, { status: 502 });
+    }
+    if (msg.includes("403")) {
+      return NextResponse.json({
+        error: "GitLab access denied — token may be missing 'read_api' scope.",
+        detail: "Edit the token in GitLab and ensure it has 'read_api' or 'api' scope.",
+      }, { status: 502 });
+    }
+    return NextResponse.json({
+      error: "Could not connect to GitLab. Check the base URL and token.",
+      detail: msg,
+    }, { status: 502 });
   }
 }

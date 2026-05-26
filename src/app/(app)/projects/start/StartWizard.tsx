@@ -163,6 +163,7 @@ export default function StartWizard({ connectors, programs }: Props) {
   const [pendingConnector, setPendingConnector] = useState<Connector | null>(null);
   const [sourceItems, setSourceItems] = useState<Array<{ id: string; label: string }>>([]);
   const [sourceItemsLoading, setSourceItemsLoading] = useState(false);
+  const [sourceItemsError, setSourceItemsError] = useState<string | null>(null);
   const [selectedSourceItem, setSelectedSourceItem] = useState("");
 
   // Step 3 — governance profile
@@ -201,6 +202,7 @@ export default function StartWizard({ connectors, programs }: Props) {
     if (!pendingConnector) return;
     setSourceItems([]);
     setSelectedSourceItem("");
+    setSourceItemsError(null);
     setSourceItemsLoading(true);
 
     const url =
@@ -211,21 +213,35 @@ export default function StartWizard({ connectors, programs }: Props) {
           : `/api/integrations/jira/boards?connectorId=${pendingConnector.id}`;
 
     fetch(url)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: Record<string, unknown> | null) => {
-        if (!data) return;
+      .then(async (r) => {
+        const body = await r.json().catch(() => ({})) as Record<string, unknown>;
+        if (!r.ok) {
+          const errMsg = (body.error as string | undefined) ?? `${pendingConnector.type} returned ${r.status}`;
+          const detail = body.detail as string | undefined;
+          throw new Error(detail ? `${errMsg} — ${detail}` : errMsg);
+        }
+        return body;
+      })
+      .then((data) => {
         let items: Array<{ id: string; label: string }> = [];
         if (pendingConnector.type === "github" && Array.isArray(data.repos)) {
           items = (data.repos as Array<{ fullName: string }>).map((r) => ({ id: r.fullName, label: r.fullName }));
         } else if (pendingConnector.type === "gitlab" && Array.isArray(data.projects)) {
-          items = (data.projects as Array<{ pathWithNamespace: string }>).map((r) => ({ id: r.pathWithNamespace, label: r.pathWithNamespace }));
+          items = (data.projects as Array<{ pathWithNamespace: string; name: string }>).map((r) => ({
+            id: r.pathWithNamespace,
+            label: `${r.name} (${r.pathWithNamespace})`,
+          }));
         } else if (pendingConnector.type === "jira" && Array.isArray(data.boards)) {
           items = (data.boards as Array<{ id: number | string; name: string }>).map((b) => ({ id: String(b.id), label: b.name }));
         }
         setSourceItems(items);
         if (items.length > 0) setSelectedSourceItem(items[0].id);
+        else setSourceItemsError(`No ${pendingConnector.type} projects found for this connector. Check the token has the right scopes.`);
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Could not reach connector API";
+        setSourceItemsError(msg);
+      })
       .finally(() => setSourceItemsLoading(false));
   }, [pendingConnector]);
 
@@ -457,9 +473,27 @@ export default function StartWizard({ connectors, programs }: Props) {
                       SELECT {pendingConnector.type === "jira" ? "BOARD" : "REPOSITORY"}
                     </label>
                     {sourceItemsLoading ? (
-                      <p className="font-mono-technical text-[10px] text-on-surface-variant animate-pulse">Loading...</p>
+                      <p className="font-mono-technical text-[10px] text-on-surface-variant animate-pulse">
+                        Connecting to {pendingConnector.name}...
+                      </p>
+                    ) : sourceItemsError ? (
+                      <div className="space-y-xs">
+                        <div className="flex items-start gap-sm border border-critical/40 bg-critical/5 px-md py-sm">
+                          <span className="material-symbols-outlined text-critical shrink-0" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>error</span>
+                          <p className="font-mono-technical text-[10px] text-critical leading-relaxed">{sourceItemsError}</p>
+                        </div>
+                        <a
+                          href="/admin/connectors"
+                          className="inline-flex items-center gap-xs font-mono-technical text-[10px] text-primary hover:underline"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 12 }}>settings</span>
+                          Fix connector credentials in Admin → Connectors →
+                        </a>
+                      </div>
                     ) : sourceItems.length === 0 ? (
-                      <p className="font-mono-technical text-[10px] text-on-surface-variant">No items found for this connector</p>
+                      <p className="font-mono-technical text-[10px] text-on-surface-variant">
+                        Select a connector above to load available {pendingConnector.type === "jira" ? "boards" : "repositories"}.
+                      </p>
                     ) : (
                       <select
                         className="w-full bg-surface-container-low border border-border-muted px-md py-sm text-[13px] text-on-surface focus:outline-none focus:border-primary"
@@ -483,7 +517,7 @@ export default function StartWizard({ connectors, programs }: Props) {
                     ADD SOURCE
                   </button>
                   <button
-                    onClick={() => { setAddingSource(false); setPendingConnector(null); }}
+                    onClick={() => { setAddingSource(false); setPendingConnector(null); setSourceItemsError(null); setSourceItems([]); }}
                     className="px-lg py-sm border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary/50 transition-colors"
                   >
                     CANCEL

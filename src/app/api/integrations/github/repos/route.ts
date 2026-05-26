@@ -23,10 +23,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const creds = connector.credentials as Record<string, string>;
-  const token = creds.token ?? "";
+  const token = creds.token ?? creds.apiToken ?? creds.accessToken ?? "";
 
   if (!token) {
-    return NextResponse.json({ error: "No token configured on connector" }, { status: 400 });
+    return NextResponse.json({
+      error: "No personal access token configured for this GitHub connector.",
+      detail: "Go to Admin → Connectors → edit this connector and add a GitHub personal access token.",
+    }, { status: 400 });
   }
 
   try {
@@ -34,6 +37,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const repos = await ghConn.listRepositories();
     return NextResponse.json({ repos });
   } catch (err) {
-    return NextResponse.json({ error: "GitHub API error", detail: String(err) }, { status: 502 });
+    const msg = String(err);
+    if (msg.includes("401") || msg.includes("Bad credentials")) {
+      return NextResponse.json({
+        error: "GitHub authentication failed — token is invalid or expired.",
+        detail: "Update the personal access token in Admin → Connectors.",
+      }, { status: 502 });
+    }
+    if (msg.includes("403")) {
+      return NextResponse.json({
+        error: "GitHub access denied — token may be missing 'repo' scope.",
+        detail: "Edit the token in GitHub and ensure it has 'repo' or 'read:org' scope.",
+      }, { status: 502 });
+    }
+    return NextResponse.json({ error: "Could not connect to GitHub. Check the token.", detail: msg }, { status: 502 });
   }
 }
