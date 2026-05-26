@@ -389,7 +389,7 @@ export default function ProjectSettingsClient({ project, boards: initialBoards, 
               <p className="font-mono-technical text-[10px] text-on-surface-variant tracking-widest mb-xs">DELIVERY SOURCES</p>
               <p className="font-body-base text-[12px] text-on-surface-variant">
                 Connect Jira boards, GitHub repos, and GitLab projects. A single project can have multiple boards across different tools.
-                Use <strong>Label Tags</strong> to auto-tag governance items by their source (e.g. "payments", "core-banking").
+                Use <strong>Label Tags</strong> to auto-tag governance items by their source (e.g. &quot;payments&quot;, &quot;core-banking&quot;).
               </p>
             </div>
 
@@ -605,7 +605,7 @@ export default function ProjectSettingsClient({ project, boards: initialBoards, 
 
             <div className="bg-surface-container-low border border-border-muted px-lg py-md">
               <p className="font-mono-technical text-[10px] text-on-surface-variant">
-                <strong>Label Tags</strong> — when set on a board, all governance items from that board are automatically tagged (e.g. "payments").
+                <strong>Label Tags</strong> — when set on a board, all governance items from that board are automatically tagged (e.g. &quot;payments&quot;).
                 Use this to filter items, scope monitoring rules, and build board-specific reports.
                 <br />
                 <strong>Risk Override</strong> — forces a minimum risk level for all items from a board. Useful for production-hotfix or critical-path boards.
