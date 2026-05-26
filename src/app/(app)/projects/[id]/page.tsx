@@ -143,7 +143,7 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
               ASSURANCE ITEMS →
             </Link>
             <Link
-              href={`/admin/trigger-rules?project=${project.id}`}
+              href={`/projects/${project.id}/settings`}
               className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
             >
               CONFIGURE →

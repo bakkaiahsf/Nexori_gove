@@ -1676,9 +1676,28 @@ function NewProjectWizard({ onClose }: { onClose: () => void }) {
 
 // ─── ProjectCard ─────────────────────────────────────────────────────────────
 
-function ProjectCard({ project }: { project: ProjectSummary }) {
+function ProjectCard({
+  project,
+  onArchived,
+}: {
+  project: ProjectSummary;
+  onArchived: (id: string) => void;
+}) {
   const cfg = READINESS_CFG[project.readiness];
   const setupComplete = project.triggerRules > 0 && project.connectors.length > 0;
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+
+  async function handleArchive() {
+    setArchiving(true);
+    const res = await fetch(`/api/admin/projects/${project.id}`, { method: "DELETE" });
+    if (res.ok) {
+      onArchived(project.id);
+    } else {
+      setArchiving(false);
+      setConfirmArchive(false);
+    }
+  }
 
   return (
     <div
@@ -1687,12 +1706,20 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
       <div className="flex items-start gap-md">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-sm flex-wrap">
-            <span className="font-body-bold text-body-bold text-on-surface text-[14px] truncate">
+            <a
+              href={`/projects/${project.id}`}
+              className="font-body-bold text-body-bold text-on-surface text-[14px] truncate hover:text-primary transition-colors"
+            >
               {project.name}
-            </span>
+            </a>
             {project.status === "active" && (
               <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-primary text-primary bg-primary/10">
                 ACTIVE
+              </span>
+            )}
+            {project.status === "archived" && (
+              <span className="px-1.5 py-0.5 font-mono-technical text-[8px] border border-on-surface-variant/30 text-on-surface-variant">
+                ARCHIVED
               </span>
             )}
           </div>
@@ -1708,11 +1735,38 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
             </span>
           </div>
         </div>
-        <div
-          className={`px-2 py-1 font-mono-technical text-[10px] border flex items-center gap-xs shrink-0 ${cfg.cls}`}
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-          {cfg.label}
+        <div className="flex items-center gap-xs shrink-0">
+          <div
+            className={`px-2 py-1 font-mono-technical text-[10px] border flex items-center gap-xs ${cfg.cls}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+            {cfg.label}
+          </div>
+          {!confirmArchive ? (
+            <button
+              onClick={() => setConfirmArchive(true)}
+              title="Archive project"
+              className="w-6 h-6 flex items-center justify-center text-on-surface-variant hover:text-critical transition-colors"
+            >
+              <Icon name="archive" size={14} />
+            </button>
+          ) : (
+            <div className="flex items-center gap-xs">
+              <button
+                onClick={() => void handleArchive()}
+                disabled={archiving}
+                className="px-sm py-0.5 font-mono-technical text-[9px] border border-critical text-critical hover:bg-critical/10 disabled:opacity-40 transition-colors"
+              >
+                {archiving ? "…" : "ARCHIVE"}
+              </button>
+              <button
+                onClick={() => setConfirmArchive(false)}
+                className="font-mono-technical text-[9px] text-on-surface-variant hover:text-on-surface"
+              >
+                CANCEL
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1781,25 +1835,25 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
 
       <div className="flex gap-sm pt-sm border-t border-border-muted">
         <a
-          href={`/cases?project=${project.key}`}
-          className="flex-1 text-center py-xs font-mono-technical text-[10px] border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+          href={`/projects/${project.id}`}
+          className="flex-1 text-center py-xs font-mono-technical text-[10px] border border-primary text-primary hover:bg-primary/10 transition-colors"
         >
-          VIEW CASES
+          PROJECT HUB
         </a>
         <a
-          href={`/orchestration?project=${project.key}`}
+          href={`/cases?projectId=${project.id}`}
           className="flex-1 text-center py-xs font-mono-technical text-[10px] border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
         >
-          ORCHESTRATION
+          CASES
         </a>
         <a
-          href={`/admin/projects/${project.id}`}
+          href={`/projects/${project.id}/settings`}
           className="flex-1 text-center py-xs font-mono-technical text-[10px] border border-border-muted text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
         >
-          SYNC
+          SETTINGS
         </a>
         <a
-          href={`/release-readiness?project=${project.key}`}
+          href={`/release-readiness?projectId=${project.id}`}
           className={`flex-1 text-center py-xs font-mono-technical text-[10px] border transition-colors ${project.readiness === "NO_GO" ? "border-critical text-critical hover:bg-critical/10" : project.readiness === "GO" ? "border-primary text-primary hover:bg-primary/10" : "border-border-muted text-on-surface-variant hover:border-primary hover:text-primary"}`}
         >
           {project.readiness === "GO"
@@ -1904,8 +1958,13 @@ function GovernanceGuide() {
 export default function ProjectsClient({ projects }: { projects: ProjectSummary[] }) {
   const [showNew, setShowNew] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | "no_go" | "setup">("all");
+  const [localProjects, setLocalProjects] = useState(projects);
 
-  const filtered = projects.filter((p) => {
+  function handleArchived(id: string) {
+    setLocalProjects((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  const filtered = localProjects.filter((p) => {
     if (filterStatus === "no_go") return p.readiness === "NO_GO";
     if (filterStatus === "setup") return p.readiness === "SETUP";
     return true;
@@ -1956,7 +2015,7 @@ export default function ProjectsClient({ projects }: { projects: ProjectSummary[
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-lg">
           {filtered.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+            <ProjectCard key={p.id} project={p} onArchived={handleArchived} />
           ))}
         </div>
       )}

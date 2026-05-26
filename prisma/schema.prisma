@@ -165,18 +165,19 @@ model Program {
 }
 
 model Project {
-  id             String   @id @default(cuid())
-  key            String   @unique
-  name           String
-  description    String?
-  domain         String?
-  classification String?  // public|internal|confidential|restricted
-  ownerEmail     String
-  tenantId       String?
-  status         String   @default("active") // active|archived|paused
-  programId      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  name               String
+  description        String?
+  domain             String?
+  classification     String?  // public|internal|confidential|restricted
+  ownerEmail         String
+  tenantId           String?
+  status             String   @default("active") // active|archived|paused
+  programId          String?
+  governanceProfile  String   @default("agile")  // agile|regulated|ai_sensitive|critical|third_party|custom
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   program            Program?               @relation(fields: [programId], references: [id])
   aiControlSetting   AIControlSetting?
@@ -190,6 +191,7 @@ model Project {
   triggerRules       GovernanceTriggerRule[]
   boards             ProjectBoard[]
   guardrailPushes    GuardrailPush[]
+  ragSources         ProjectRagSource[]
 
   @@map("projects")
 }
@@ -202,6 +204,8 @@ model ProjectBoard {
   boardName   String
   boardType   String   @default("scrum") // scrum|kanban
   enabled     Boolean  @default(true)
+  labelTag    String?  // e.g. "payments" — auto-tags governance items from this board
+  riskOverride String? // "high"|"medium"|null — forces risk level for all items from this board
   createdAt   DateTime @default(now())
 
   project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -209,6 +213,22 @@ model ProjectBoard {
 
   @@unique([projectId, connectorId, boardId])
   @@map("project_boards")
+}
+
+model ProjectRagSource {
+  id            String    @id @default(cuid())
+  projectId     String
+  type          String    // "confluence"|"github-path"|"gitlab-path"|"url"|"policy-corpus"
+  name          String
+  config        Json      // { spaceKey?, repoPath?, url?, connectorId?, branchName? }
+  enabled       Boolean   @default(true)
+  lastIndexedAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_rag_sources")
 }
 
 model GateBundle {

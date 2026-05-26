@@ -8,7 +8,9 @@ const AddBoardSchema = z.object({
   connectorId: z.string(),
   boardId: z.string(),
   boardName: z.string(),
-  boardType: z.enum(["scrum", "kanban"]).default("scrum"),
+  boardType: z.enum(["scrum", "kanban", "repo"]).default("scrum"),
+  labelTag: z.string().optional(),
+  riskOverride: z.enum(["high", "medium"]).nullable().optional(),
 });
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -32,6 +34,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     include: { connector: { select: { id: true, type: true, name: true } } },
   });
   return NextResponse.json(board, { status: 201 });
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: projectId } = await params;
+  const body = await req.json() as { boardId: string; labelTag?: string | null; riskOverride?: string | null; enabled?: boolean };
+  const board = await prisma.projectBoard.update({
+    where: { id: body.boardId, projectId },
+    data: {
+      labelTag: body.labelTag ?? undefined,
+      riskOverride: body.riskOverride ?? undefined,
+      enabled: typeof body.enabled === "boolean" ? body.enabled : undefined,
+    },
+    include: { connector: { select: { id: true, type: true, name: true } } },
+  });
+  return NextResponse.json(board);
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
