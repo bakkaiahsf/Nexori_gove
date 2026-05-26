@@ -153,15 +153,18 @@ export default async function CaseDetail({ params }: { params: { id: string } })
       <header className="h-14 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
         <div className="flex items-center gap-md">
           <Link
-            href="/cases"
+            href={`/projects/${governanceCase.project.id}`}
             className="text-on-surface-variant hover:text-primary transition-colors"
           >
             <Icon name="arrow_back" size={18} />
           </Link>
           <span className="text-border-muted">|</span>
-          <span className="font-mono-technical text-[11px] text-on-surface-variant">
-            {governanceCase.project.key}
-          </span>
+          <Link
+            href={`/projects/${governanceCase.project.id}`}
+            className="font-mono-technical text-[11px] text-primary hover:underline"
+          >
+            {governanceCase.project.name}
+          </Link>
           <span className="text-border-muted">·</span>
           <span className="font-mono-technical text-[11px] text-on-surface-variant">
             #{params.id.slice(-8).toUpperCase()}
@@ -636,7 +639,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
                 <div className="divide-y divide-border-muted">
                   {governanceGates.length === 0 ? (
                     <p className="p-xl font-mono-technical text-[11px] text-on-surface-variant">
-                      No gates configured.
+                      No readiness checks configured.
                     </p>
                   ) : (
                     governanceGates.map((gate) => (
@@ -875,7 +878,7 @@ export default async function CaseDetail({ params }: { params: { id: string } })
             </span>
           )}
         </div>
-        <Link href="/timeline" className="text-primary hover:underline">
+        <Link href={`/timeline?projectId=${governanceCase.project.id}`} className="text-primary hover:underline">
           FLIGHT RECORDER →
         </Link>
       </footer>

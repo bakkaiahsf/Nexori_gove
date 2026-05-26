@@ -65,45 +65,69 @@ export default async function ProjectHubPage({ params }: { params: { id: string 
 
   return (
     <>
-      <header className="h-16 px-xl flex items-center justify-between border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
-        <div className="flex items-center gap-md">
-          <Link
-            href="/projects"
-            className="text-on-surface-variant hover:text-primary transition-colors"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-              arrow_back
-            </span>
-          </Link>
-          <span className="text-border-muted">|</span>
-          <div>
-            <div className="flex items-center gap-md">
-              <span className="font-mono-technical text-[10px] text-primary">{project.key}</span>
-              {project.program && (
-                <span className="font-mono-technical text-[10px] text-on-surface-variant">{project.program.name}</span>
-              )}
+      <header className="border-b border-border-muted bg-surface z-40 sticky top-0 shrink-0">
+        {/* Top row */}
+        <div className="h-14 px-xl flex items-center justify-between">
+          <div className="flex items-center gap-md">
+            <Link href="/projects" className="text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <span className="text-border-muted">|</span>
+            <div>
+              <div className="flex items-center gap-md">
+                <span className="font-mono-technical text-[10px] text-primary">{project.key}</span>
+                {project.program && (
+                  <Link
+                    href={`/admin/programs`}
+                    className="font-mono-technical text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    {project.program.name}
+                  </Link>
+                )}
+                {aiSetting && (
+                  <span className={`font-mono-technical text-[9px] border px-1.5 py-0.5 ${
+                    aiSetting.mode === "EMERGENCY_LOCK" ? "text-critical border-critical" :
+                    aiSetting.mode === "AI_REVIEW" ? "text-primary border-primary" :
+                    aiSetting.mode === "HUMAN_ONLY" ? "text-on-surface-variant border-border-muted" :
+                    "text-primary border-primary/40"
+                  }`}>
+                    {aiSetting.mode === "AI_REVIEW" ? "REGULATED" :
+                     aiSetting.mode === "AI_ASSIST" ? "AGILE" :
+                     aiSetting.mode === "HUMAN_ONLY" ? "MANUAL" :
+                     aiSetting.mode === "EMERGENCY_LOCK" ? "LOCKED" :
+                     aiSetting.mode.replace(/_/g, " ")}
+                  </span>
+                )}
+                {pendingChecks > 0 && (
+                  <span className="font-mono-technical text-[9px] border border-tertiary text-tertiary px-1.5 py-0.5">
+                    {pendingChecks} PENDING
+                  </span>
+                )}
+              </div>
+              <h1 className="font-body-bold text-body-bold text-on-surface text-[14px] leading-tight">{project.name}</h1>
             </div>
-            <h1 className="font-body-bold text-body-bold text-on-surface text-[14px] leading-tight">{project.name}</h1>
           </div>
-        </div>
-        <div className="flex items-center gap-sm">
-          {pendingChecks > 0 && (
-            <span className="px-2 py-0.5 font-mono-technical text-[10px] border border-tertiary text-tertiary">
-              {pendingChecks} PENDING
-            </span>
-          )}
-          <Link
-            href={`/release-readiness?projectId=${project.id}`}
-            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
-          >
-            READINESS →
-          </Link>
-          <Link
-            href={`/cases?projectId=${project.id}`}
-            className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
-          >
-            ITEMS →
-          </Link>
+          {/* Primary actions */}
+          <div className="flex items-center gap-sm">
+            <Link
+              href={`/release-readiness?projectId=${project.id}`}
+              className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+            >
+              READINESS →
+            </Link>
+            <Link
+              href={`/cases?projectId=${project.id}`}
+              className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+            >
+              ASSURANCE ITEMS →
+            </Link>
+            <Link
+              href={`/admin/trigger-rules?project=${project.id}`}
+              className="px-md py-xs border border-border-muted text-on-surface-variant font-mono-technical text-[10px] hover:border-primary hover:text-primary transition-colors"
+            >
+              CONFIGURE →
+            </Link>
+          </div>
         </div>
       </header>
 

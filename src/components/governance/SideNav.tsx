@@ -25,10 +25,12 @@ const ADMIN_ITEMS = [
   { href: "/admin/programs", icon: "account_tree", label: "Programs" },
   { href: "/admin/projects", icon: "folder_special", label: "Projects & Sources" },
   { href: "/admin/connectors", icon: "hub", label: "Connectors" },
-  { href: "/admin/trigger-rules", icon: "rule", label: "Monitoring Rules" },
-  { href: "/orchestration", icon: "account_tree", label: "Orchestration" },
   { href: "/admin/templates", icon: "category", label: "Governance Profiles" },
+  { href: "/admin/trigger-rules", icon: "rule", label: "Monitoring Rules" },
+  { href: "/admin/notifications", icon: "notifications", label: "Notification Rules" },
   { href: "/admin/policy", icon: "description", label: "Policy & Frameworks" },
+  { href: "/admin/experts", icon: "people", label: "Expert Reviewers" },
+  { href: "/admin/emergency", icon: "emergency", label: "Emergency Controls" },
 ];
 
 function Icon({ name, fill = false, size = 20 }: { name: string; fill?: boolean; size?: number }) {

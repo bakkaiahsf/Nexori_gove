@@ -302,7 +302,7 @@ export default function TriggerRulesClient({
                 className={`px-lg py-sm font-mono-technical text-[11px] border transition-colors ${tab === t ? "border-primary text-primary bg-primary/10" : "border-border-muted text-on-surface-variant hover:border-primary"}`}
               >
                 {t === "rules"
-                  ? `TRIGGER RULES (${rules.length})`
+                  ? `MONITORING RULES (${rules.length})`
                   : `EVALUATION LOG (${evaluations.length})`}
               </button>
             ))}
@@ -322,7 +322,7 @@ export default function TriggerRulesClient({
         {tab === "rules" && showForm && (
           <div className="bg-surface border border-primary/30 p-xl space-y-lg">
             <p className="font-label-caps text-label-caps text-primary tracking-widest">
-              CREATE TRIGGER RULE
+              CREATE MONITORING RULE
             </p>
 
             <div className="grid grid-cols-2 gap-lg">
@@ -566,77 +566,84 @@ export default function TriggerRulesClient({
             {rules.length === 0 ? (
               <div className="bg-surface border border-border-muted p-xl text-center">
                 <p className="font-mono-technical text-[12px] text-on-surface-variant mb-md">
-                  No trigger rules configured.
+                  No monitoring rules configured for this project.
                 </p>
                 <p className="font-body-base text-body-base text-on-surface-variant text-[12px]">
-                  Without rules, the Jira connector falls back to processing all epics. GitHub and
-                  GitLab webhooks will skip all events.
+                  Add a rule to automatically detect risks, generate summaries, or create Jira tasks when delivery events occur.
                 </p>
               </div>
             ) : (
-              rules.map((rule) => (
-                <div
-                  key={rule.id}
-                  className={`bg-surface border ${rule.enabled ? "border-primary/30" : "border-border-muted opacity-60"}`}
-                >
-                  <div className="px-xl py-lg flex items-center gap-lg">
-                    <button
-                      onClick={() => void toggleRule(rule.id, rule.enabled)}
-                      disabled={togglingId === rule.id}
-                      className={`w-10 h-6 rounded-full border-2 relative transition-colors shrink-0 ${rule.enabled ? "bg-primary border-primary" : "bg-surface-container-highest border-border-muted"}`}
-                    >
-                      <span
-                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-background transition-transform ${rule.enabled ? "translate-x-4" : "translate-x-0.5"}`}
-                      />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-md mb-xs">
-                        <span className="font-body-bold text-body-bold text-on-surface">
-                          {rule.name}
-                        </span>
-                        <span className="px-2 py-0.5 bg-surface-container-high border border-border-muted font-mono-technical text-[10px] text-on-surface-variant">
-                          {rule.source.toUpperCase()}
-                        </span>
-                        <span className="font-mono-technical text-[10px] text-on-surface-variant">
-                          {rule.eventType}
-                        </span>
-                      </div>
-                      {rule.conditions.length > 0 && (
-                        <div className="flex flex-wrap gap-sm">
-                          {rule.conditions.map((c, i) => (
-                            <span
-                              key={i}
-                              className="font-mono-technical text-[10px] text-on-surface-variant"
-                            >
-                              {c.field} {c.op} &quot;{c.value}&quot;
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {rule.conditions.length === 0 && (
-                        <span className="font-mono-technical text-[10px] text-on-surface-variant/50">
-                          Matches all {rule.eventType} events
-                        </span>
-                      )}
-                      {rule.lastRunResult && rule.lastRunResult !== "ok" && (
-                        <p className="font-mono-technical text-[10px] text-critical mt-xs">
-                          RETRY: {RETRY_MESSAGES[rule.lastRunResult] ?? rule.lastRunResult}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-md shrink-0">
-                      <span
-                        className={`px-2 py-0.5 font-mono-technical text-[10px] border ${ACTION_META[rule.action]?.cls}`}
+              rules.map((rule) => {
+                const conditionSummary =
+                  rule.conditions.length > 0
+                    ? rule.conditions.map((c) => `${c.field} ${c.op} "${c.value}"`).join(" AND ")
+                    : `any ${rule.eventType.replace(".", " ")} event`;
+                const actionMeta = ACTION_META[rule.action];
+                const sourceLabel =
+                  rule.source === "jira" ? "Jira" :
+                  rule.source === "github" ? "GitHub" :
+                  rule.source === "gitlab" ? "GitLab" : rule.source;
+                const whenLabel = `${sourceLabel} ${rule.eventType.replace(".", " ")}`;
+                return (
+                  <div
+                    key={rule.id}
+                    className={`bg-surface border ${rule.enabled ? "border-border-muted hover:border-primary/40" : "border-border-muted opacity-50"} transition-colors`}
+                  >
+                    <div className="px-xl py-lg flex items-start gap-lg">
+                      {/* Toggle */}
+                      <button
+                        onClick={() => void toggleRule(rule.id, rule.enabled)}
+                        disabled={togglingId === rule.id}
+                        className={`mt-1 w-10 h-6 rounded-full border-2 relative transition-colors shrink-0 ${rule.enabled ? "bg-primary border-primary" : "bg-surface-container-highest border-border-muted"}`}
                       >
-                        {ACTION_META[rule.action]?.label}
-                      </span>
-                      <span className="font-mono-technical text-[10px] text-on-surface-variant">
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-background transition-transform ${rule.enabled ? "translate-x-4" : "translate-x-0.5"}`} />
+                      </button>
+
+                      {/* Human-readable rule */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body-bold text-body-bold text-on-surface text-[13px] mb-xs">
+                          {rule.name}
+                        </p>
+                        {/* "When ... → do ..." sentence */}
+                        <div className="flex items-center gap-xs flex-wrap font-mono-technical text-[10px] mb-sm">
+                          <span className="text-on-surface-variant">When</span>
+                          <span className="border border-border-muted px-1.5 py-0.5 text-on-surface">{whenLabel}</span>
+                          {rule.conditions.length > 0 && (
+                            <>
+                              <span className="text-on-surface-variant">where</span>
+                              <span className="text-on-surface-variant italic">{conditionSummary}</span>
+                            </>
+                          )}
+                          <span className="text-on-surface-variant">→</span>
+                          <span className={`border px-1.5 py-0.5 ${actionMeta?.cls ?? "text-on-surface border-border-muted"}`}>
+                            {actionMeta?.label ?? rule.action}
+                          </span>
+                        </div>
+                        {rule.sourceProjectRef && (
+                          <p className="font-mono-technical text-[9px] text-on-surface-variant">
+                            SOURCE: {rule.sourceProjectRef}
+                          </p>
+                        )}
+                        {rule.lastRunAt && (
+                          <p className="font-mono-technical text-[9px] text-on-surface-variant">
+                            LAST RUN: {new Date(rule.lastRunAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            {rule.lastRunResult === "ok" ? " · OK" : ""}
+                          </p>
+                        )}
+                        {rule.lastRunResult && rule.lastRunResult !== "ok" && (
+                          <p className="font-mono-technical text-[10px] text-critical mt-xs">
+                            {RETRY_MESSAGES[rule.lastRunResult] ?? rule.lastRunResult}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className="font-mono-technical text-[9px] text-on-surface-variant shrink-0 mt-1">
                         P{rule.priority}
                       </span>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
